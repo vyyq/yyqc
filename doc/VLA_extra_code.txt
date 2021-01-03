@@ -1,0 +1,31 @@
+  // if (tag == TOKEN::STATIC) {
+  //   // case:  static type-qualifier-list_{opt} assignment-expression
+  // } else if (tag == TOKEN::CONST || tag == TOKEN::RESTRICT ||
+  //            tag == TOKEN::VOLATILE || tag == TOKEN::ATOMIC) {
+  //   // case:  type-qualifier-list assignment-expression_{opt}
+  //   // case:  type-qualifier-list static assignment-expression
+  //   // case:  type-qualifier-list *
+  //   // TODO: send a node to be processed: chain = TypeQualifierList(chain);
+  //   token = PeekToken();
+  //   tag = token->tag();
+  //   if (tag == TOKEN::STAR) {
+  //     Match(TOKEN::STAR);
+  //     // TODO
+  //   } else if (tag == TOKEN::STATIC) {
+  //     Match(TOKEN::STATIC);
+  //     auto expr = AssignmentExpr();
+  //     // TODO: Handle expr.
+  //   } else {
+  //     // TODO: if assignment-expression
+  //   }
+  // } else {
+  //   // case:  assignment-expression_{opt}
+  //   // case:  *
+  //   token = PeekToken();
+  //   tag = token->tag();
+  //   if (tag == TOKEN::STAR) {
+  //     // TODO: Handle STAR
+  //   } else {
+  //     // TODO: if assignment-expression
+  //   }
+  // }
