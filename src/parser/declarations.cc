@@ -15,7 +15,8 @@
 //   Type *type_base = nullptr;
 //   // std::tie(type_token, type_base) = SpecifierQualifierList();
 //   // auto tag = PeekToken()->tag();
-//   // if (tag == TOKEN::STAR || tag == TOKEN::LPAR || tag == TOKEN::LSQUBRKT) {
+//   // if (tag == TOKEN::STAR || tag == TOKEN::LPAR || tag == TOKEN::LSQUBRKT)
+//   {
 //   //   type_base = AbstractDeclarator(type_base);
 //   // }
 //   // return type_base;
@@ -619,7 +620,7 @@ std::vector<std::unique_ptr<Symbol>> Parser::ParameterList() {
     Match(TOKEN::COMMA);
     parameter_list.push_back(std::move(ParameterDeclaration()));
   }
-  return parameter_list;
+  return std::move(parameter_list);
 }
 
 /**

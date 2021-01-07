@@ -58,6 +58,58 @@ enum class EXPR {
   ASSIGNMENT_EXPR
 };
 
+enum class OP {
+  PLUS,
+  MINUS,
+  MULTIPLY,
+  DIVIDE,
+  MOD,
+
+  ARROW_REFERENCE,
+  POINT_REFERENCE,
+  DEREFERENCE,
+  POSTFIX_INC,
+  POSTFIX_DEC,
+  PREFIX_INC,
+  PREFIX_DEC,
+  SIZEOF,
+  GET_ADDRESS,
+  POSITIVE,
+  NEGATIVE,
+  NEGATION,
+
+  RIGHT_SHIFT,
+  LEFT_SHIFT,
+  LESS,
+  GREATER,
+  LE,
+  GE,
+  EQ,
+  NE,
+
+  AND,
+  XOR,
+  OR,
+
+  LOGICAL_AND,
+  LOGICAL_OR,
+
+  COND,
+  COLON,
+
+  ASSIGN,
+  MULTIPLY_ASSIGN,
+  DIVIDE_ASSIGN,
+  MOD_ASSIGN,
+  PLUS_ASSIGN,
+  MINUS_ASSIGN,
+  LEFT_SHIFT_ASSIGN,
+  RIGHT_SHIFT_ASSIGN,
+  AND_ASSIGN,
+  NOT_ASSIGN,
+  OR_ASSIGN,
+};
+
 class ASTNode {};
 
 class Stmt : public ASTNode {};
@@ -65,10 +117,10 @@ class Stmt : public ASTNode {};
 class Expr : public ASTNode {
 public:
   void set_token(std::unique_ptr<Token> token) { _token = std::move(token); }
-    virtual ~Expr() {}
-protected:
-  Expr(std::unique_ptr<Token> token) : _token(std::move(token)) {}
+  virtual ~Expr() {}
 
+protected:
+  Expr(std::shared_ptr<Token> token) : _token(token) {}
   virtual bool IsLValue() const = 0;
 
 private:

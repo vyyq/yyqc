@@ -2,17 +2,16 @@
 #define _EXPR_H_
 
 #include "../lexer/lexer.h"
+#include "../type/type_base.h"
 #include "ast_base.h"
 #include "stmt.h"
-#include "../type/type_base.h"
 
 #include <list>
 #include <string>
 
 class PrimaryExpr : public Expr {
 public:
-protected:
-  PrimaryExpr(std::unique_ptr<Token> token) : Expr(std::move(token)) {}
+  PrimaryExpr(std::shared_ptr<Token> token) : Expr(token) {}
 };
 
 enum class IdentifierNameSpace {
@@ -28,25 +27,21 @@ public:
   void set_name_space(IdentifierNameSpace name_space) {
     _name_space = name_space;
   }
-  Identifier(std::unique_ptr<Token> token, std::unique_ptr<Type> type = nullptr)
-      : PrimaryExpr(std::move(token)), _type(std::move(type)) {}
-  Identifier(std::unique_ptr<Token> token, IdentifierNameSpace name_space,
-             std::unique_ptr<Type> type = nullptr)
-      : PrimaryExpr(std::move(token)), _name_space(name_space),
-        _type(std::move(type)) {}
+  Identifier(std::shared_ptr<Token> token) : PrimaryExpr(std::move(token)) {}
+  Identifier(std::shared_ptr<Token> token, IdentifierNameSpace name_space)
+      : PrimaryExpr(std::move(token)), _name_space(name_space) {}
   virtual bool IsLValue() const { return true; }
-  Type *type() const { return _type.get(); }
 
 private:
   IdentifierNameSpace _name_space = IdentifierNameSpace::UNKNOWN;
-  std::unique_ptr<Type> _type;
 };
 
 class Constant : public PrimaryExpr {
 public:
   virtual bool IsLValue() const { return false; }
-  Constant(std::unique_ptr<Token> token, std::unique_ptr<Value> val)
-      : PrimaryExpr(std::move(token)), _value(std::move(val)) {}
+  Constant(std::shared_ptr<Token> token, std::unique_ptr<Value> &val)
+      : PrimaryExpr(token), _value(std::move(val)) {}
+  Constant(std::shared_ptr<Token> token) : PrimaryExpr(token) {}
 
 private:
   std::unique_ptr<Value> _value;
@@ -54,31 +49,40 @@ private:
 
 class UnaryOperatorExpr : public Expr {
 public:
-  virtual bool IsLValue() const;
-  UnaryOperatorExpr(TOKEN op, std::unique_ptr<Expr> &operand, std::unique_ptr<Token> &token)
-      : Expr(std::move(token)), _operator(op), _operand(std::move(operand)) {}
-  UnaryOperatorExpr(TOKEN op, std::unique_ptr<Expr> operand)
+  virtual bool IsLValue() const { return true; }
+  UnaryOperatorExpr(OP op, std::unique_ptr<Expr> &operand,
+                    std::shared_ptr<Token> &token)
+      : Expr(token), _operator(op), _operand(std::move(operand)) {}
+  UnaryOperatorExpr(OP op, std::unique_ptr<Expr> &operand)
       : Expr(nullptr), _operator(op), _operand(std::move(operand)) {}
-  void set_operator(TOKEN op) { _operator = op; }
-  void set_operand(std::unique_ptr<Expr> operand) { _operand = std::move(operand); }
+  void set_operator(OP op) { _operator = op; }
+  void set_operand(std::unique_ptr<Expr> &operand) {
+    _operand = std::move(operand);
+  }
 
 private:
-  TOKEN _operator;
+  OP _operator;
   std::unique_ptr<Expr> _operand;
 };
 
 class BinaryOperatorExpr : public Expr {
 public:
   virtual bool IsLValue() const { return false; };
-  BinaryOperatorExpr(TOKEN op, std::unique_ptr<Expr> operand1, std::unique_ptr<Expr> operand2,
-                     std::unique_ptr<Token> token = nullptr)
-      : Expr(std::move(token)), _operator(op), _operand1(std::move(operand1)), _operand2(std::move(operand2)) {}
-  void set_operator(TOKEN op) { _operator = op; }
-  void set_operand1(std::unique_ptr<Expr> operand1) { _operand1 = std::move(operand1); }
-  void set_operand2(std::unique_ptr<Expr> operand2) { _operand2 = std::move(operand2); }
+  BinaryOperatorExpr(OP op, std::unique_ptr<Expr> &operand1,
+                              std::unique_ptr<Expr> &operand2,
+                              std::shared_ptr<Token> token = nullptr)
+      : Expr(token), _operator(op), _operand1(std::move(operand1)),
+        _operand2(std::move(operand2)) {}
+  void set_operator(OP op) { _operator = op; }
+  void set_operand1(std::unique_ptr<Expr> operand1) {
+    _operand1 = std::move(operand1);
+  }
+  void set_operand2(std::unique_ptr<Expr> operand2) {
+    _operand2 = std::move(operand2);
+  }
 
 private:
-  TOKEN _operator;
+  OP _operator;
   std::unique_ptr<Expr> _operand1;
   std::unique_ptr<Expr> _operand2;
 };
@@ -86,34 +90,44 @@ private:
 class TenaryOperatorExpr : public Expr {
 public:
   virtual bool IsLValue() const { return false; };
-  TenaryOperatorExpr(TOKEN op1, TOKEN op2, Expr *operand1, Expr *operand2,
-                     Expr *operand3, std::unique_ptr<Token> token = nullptr)
-      : Expr(std::move(token)), _operator1(op1), _operator2(op2), _operand1(operand1),
-        _operand2(operand2), _operand3(operand3) {}
-  void set_operator1(TOKEN op1) { _operator1 = op1; }
-  void set_operator2(TOKEN op2) { _operator2 = op2; }
-  void set_operand1(Expr *operand1) { _operand1 = operand1; }
-  void set_operand2(Expr *operand2) { _operand2 = operand2; }
-  void set_operand3(Expr *operand3) { _operand3 = operand3; }
+  TenaryOperatorExpr(OP op1, OP op2, std::unique_ptr<Expr> &operand1,
+                     std::unique_ptr<Expr> &operand2,
+                     std::unique_ptr<Expr> &operand3,
+                     std::shared_ptr<Token> token = nullptr)
+      : Expr(token), _operator1(op1), _operator2(op2),
+        _operand1(std::move(operand1)), _operand2(std::move(operand2)),
+        _operand3(std::move(operand3)) {}
+  void set_operator1(OP op1) { _operator1 = op1; }
+  void set_operator2(OP op2) { _operator2 = op2; }
 
 private:
-  TOKEN _operator1;
-  TOKEN _operator2;
-  Expr *_operand1;
-  Expr *_operand2;
-  Expr *_operand3;
+  OP _operator1;
+  OP _operator2;
+  std::unique_ptr<Expr> _operand1;
+  std::unique_ptr<Expr> _operand2;
+  std::unique_ptr<Expr> _operand3;
 };
 
 class FunctionCallExpr : public Expr {
 public:
   virtual bool IsLValue() const { return false; }
-  FunctionCallExpr(Expr *designator, const std::list<Expr *> &param_list,
-                   std::unique_ptr<Token> token = nullptr)
-      : Expr(std::move(token)), _designator(designator), _parameter_list(param_list) {}
+  FunctionCallExpr(std::unique_ptr<Expr> &designator,
+                   std::vector<std::unique_ptr<Expr>> &param_list,
+                   std::shared_ptr<Token> token = nullptr)
+      : Expr(token), _designator(std::move(designator)),
+        _parameter_list(std::move(param_list)) {}
+  FunctionCallExpr(std::unique_ptr<Expr> &designator,
+                   std::shared_ptr<Token> token = nullptr)
+      : Expr(token), _designator(std::move(designator)) {}
+  void AddParameters(std::vector<std::unique_ptr<Expr>> &src) {
+    _parameter_list.insert(_parameter_list.end(),
+                           std::make_move_iterator(src.begin()),
+                           std::make_move_iterator(src.end()));
+  }
 
 private:
-  Expr *_designator;
-  std::list<Expr *> _parameter_list;
+  std::unique_ptr<Expr> _designator;
+  std::vector<std::unique_ptr<Expr>> _parameter_list;
 };
 
 #endif

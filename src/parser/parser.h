@@ -58,29 +58,25 @@ public:
   bool Scan() { return TranslationUnit(); }
 
   // Expressions
-  // Expr *Expression();
-  // std::unique_ptr<Expr> PrimaryExpr();
-  // Constant *EnumerationConstant();
-  // Constant *CharacterConstant();
-  // StringLiteral *StrLiteral();
-  // Expr *PostfixExpr();
-  // Expr *UnaryExpr();
-  // Expr *Sizeof();
+  std::unique_ptr<Expr> Expression();
+  std::unique_ptr<Expr> PrimaryExpression();
+  std::unique_ptr<Expr> PostfixExpr();
+  std::unique_ptr<Expr> UnaryExpr();
   // Expr *Alignof();
-  // Expr *CastExpr();
-  // Expr *MultiplicativeExpr();
-  // Expr *AdditiveExpr();
-  // Expr *ShiftExpr();
-  // Expr *RelationalExpr();
-  // Expr *EqualityExpr();
-  // Expr *ANDExpr();
-  // Expr *XORExpr();
-  // Expr *ORExpr();
-  // Expr *LogicalANDExpr();
-  // Expr *LogicalORExpr();
-  // Expr *ConditionalExpr();
-  // Expr *AssignmentExpr();
-  // Expr *ConstantExpr();
+  std::unique_ptr<Expr> CastExpr();
+  std::unique_ptr<Expr> MultiplicativeExpr();
+  std::unique_ptr<Expr> AdditiveExpr();
+  std::unique_ptr<Expr> ShiftExpr();
+  std::unique_ptr<Expr> RelationalExpr();
+  std::unique_ptr<Expr> EqualityExpr();
+  std::unique_ptr<Expr> ANDExpr();
+  std::unique_ptr<Expr> XORExpr();
+  std::unique_ptr<Expr> ORExpr();
+  std::unique_ptr<Expr> LogicalANDExpr();
+  std::unique_ptr<Expr> LogicalORExpr();
+  std::unique_ptr<Expr> ConditionalExpr();
+  std::unique_ptr<Expr> AssignmentExpr();
+  std::unique_ptr<Expr> ConstantExpr();
 
   // Declarators
   bool TryDeclaration();
@@ -104,13 +100,13 @@ public:
   std::unique_ptr<Type> DirectDeclaratorPrime(std::unique_ptr<Type> &); // in cc
   std::unique_ptr<Type> Pointer(const std::unique_ptr<Type> &);         // in cc
   void TypeQualifierList(std::unique_ptr<Type> &);                      // in cc
-  // Type *StaticAssertDeclaration(Type *);                                // in cc
-  // Type *EnumeratorList(Type *);                                         // in cc
-  // Type *Enumerator(Type *);                                             // in cc
-  // Type *EnumerationConstant(Type *);                                    // in cc
-  void ParameterTypeList(std::unique_ptr<FunctionType> &);              // in cc
-  std::vector<std::unique_ptr<Symbol>> ParameterList();                 // in cc
-  std::unique_ptr<Symbol> ParameterDeclaration();                       // in cc
+  // Type *StaticAssertDeclaration(Type *);                                // in
+  // cc Type *EnumeratorList(Type *);                                         //
+  // in cc Type *Enumerator(Type *); // in cc Type *EnumerationConstant(Type *);
+  // // in cc
+  void ParameterTypeList(std::unique_ptr<FunctionType> &); // in cc
+  std::vector<std::unique_ptr<Symbol>> ParameterList();    // in cc
+  std::unique_ptr<Symbol> ParameterDeclaration();          // in cc
   std::unique_ptr<Symbol>
   AbstractDeclarator(const std::unique_ptr<Type> &); // in cc
   std::unique_ptr<Symbol>
@@ -136,27 +132,29 @@ public:
   void DeclarationList();
 
 private:
-  //  Expr *PostfixExprPrime(Expr *);
-  //  Expr *ArraySubscripting(Expr *);
-  //  Expr *FunctionCall(Expr *);
-  //  Expr *MemberReference(Expr *);
-  //  Expr *PostfixIncrement(Expr *);
-  //  Expr *PostfixDecrement(Expr *);
+  void PostfixExprPrime(std::unique_ptr<Expr> &);
+  void ArraySubscripting(std::unique_ptr<Expr> &);
+  void FunctionCall(std::unique_ptr<Expr> &);
+  void MemberReference(std::unique_ptr<Expr> &);
+  void PostfixIncrement(std::unique_ptr<Expr> &);
+  void PostfixDecrement(std::unique_ptr<Expr> &);
+  std::vector<std::unique_ptr<Expr>> ArgumentExpressionList();
   //  Expr *CompoundLiterals(Expr *);
   //  Expr *UnaryExpr(Expr *);
   //  Token *UnaryOperator();
-  //  Token *PrefixIncrement();
-  //  Token *PrefixDecrement();
-  //  Expr *MultiplicativeExprPrime(Expr *operand1);
-  //  Expr *AdditiveExprPrime(Expr *operand1);
-  //  Expr *ShiftExprPrime(Expr *operand1);
-  //  Expr *RelationalExprPrime(Expr *operand1);
-  //  Expr *EqualityExprPrime(Expr *operand1);
-  //  Expr *ANDExprPrime(Expr *operand1);
-  //  Expr *XORExprPrime(Expr *operand1);
-  //  Expr *ORExsprPrime(Expr *operand1);
-  //  Expr *LogicalANDExprPrime(Expr *operand1);
-  //  Expr *LogicalORExprPrime(Expr *operand1);
+  std::unique_ptr<Expr> PrefixIncrement();
+  std::unique_ptr<Expr> PrefixDecrement();
+  std::unique_ptr<Expr> Sizeof();
+  void MultiplicativeExprPrime(std::unique_ptr<Expr> &);
+  void AdditiveExprPrime(std::unique_ptr<Expr> &operand1);
+  void ShiftExprPrime(std::unique_ptr<Expr> &operand1);
+  void RelationalExprPrime(std::unique_ptr<Expr> &operand1);
+  void EqualityExprPrime(std::unique_ptr<Expr> &operand1);
+  void ANDExprPrime(std::unique_ptr<Expr> &operand1);
+  void XORExprPrime(std::unique_ptr<Expr> &operand1);
+  void ORExprPrime(std::unique_ptr<Expr> &operand1);
+  void LogicalANDExprPrime(std::unique_ptr<Expr> &operand1);
+  void LogicalORExprPrime(std::unique_ptr<Expr> &operand1);
 
   // Declarations
   void StructDeclarationListPrime(Type *);                   // in cc

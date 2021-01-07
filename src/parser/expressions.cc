@@ -17,85 +17,38 @@
  *                        | ( expression )
  *                        | generic-selection
  */
-// std::unique_ptr<Expr> Parser::PrimaryExpr() {
-//   auto token = PeekToken();
-//   switch (token->tag()) {
-//   case TOKEN::IDENTIFIER:
-//     Match(TOKEN::IDENTIFIER);
-//     return;
-//   case TOKEN::CONSTANT_START... TOKEN::CONSTANT_END:
-//     ConsumeToken();
-//     return Const();
-//   case TOKEN::STRING_LITERAL:
-//     Match(TOKEN::STRING_LITERAL);
-//     return StrLiteral();
-//   case TOKEN::LPAR:
-//     Match(TOKEN::LPAR);
-//     expr = Expression();
-//     Match(TOKEN::RPAR);
-//     break; // TODO:
-//   case TOKEN::GENERIC:
-//     // TODO
-//     Error("Generic-selection is not supported now.");
-//   default:
-//     break;
-//   }
-//   return nullptr;
-// }
+std::unique_ptr<Expr> Parser::PrimaryExpression() {
+  auto token = PeekToken();
+  auto tag = token->tag();
+  if (tag == TOKEN::IDENTIFIER) {
+    Match(TOKEN::IDENTIFIER);
+    return std::make_unique<Identifier>(token);
+  } else if (tag == TOKEN::INTEGER_CONTANT || tag == TOKEN::FLOATING_CONSTANT ||
+             tag == TOKEN::ENUMERATION_CONSTANT ||
+             tag == TOKEN::CHARACTER_CONSTANT) {
+    ConsumeToken();
+    return std::make_unique<Constant>(token);
+  } else if (tag == TOKEN::STRING_LITERAL) {
+    Match(TOKEN::STRING_LITERAL);
+    return std::make_unique<Constant>(token);
+  } else if (tag == TOKEN::LPAR) {
+    Match(TOKEN::LPAR);
+    auto expr = Expression();
+    Match(TOKEN::RPAR);
+    return std::move(expr);
+  } else if (tag == TOKEN::GENERIC) {
+    Error("Generic-selection is not supported now.");
+    return nullptr;
+  } else {
+    return nullptr;
+  }
+}
 
-// Identifier *Parser::Identf() {
-//   auto token = Match(TOKEN::IDENTIFIER);
-//   return new Identifier(token);
-// }
-
-// /**
-//  *  constant  ->
-//  *                integer-constant
-//  *                floating-constant
-//  *                enumeration-constant
-//  *                character-constant
-//  */
-// Constant *Parser::Const() {
-//   auto token = PeekToken();
-//   assert(token->IsConstant());
-//   // Must be one of the three, by the assertion.
-//   switch (token->tag()) {
-//   case TOKEN::INTEGER_CONTANT:
-//     return IntegerConstant();
-//   case TOKEN::FLOATING_CONSTANT:
-//     return FloatingConstant();
-//   case TOKEN::ENUMERATION_CONSTANT:
-//     return EnumerationConstant();
-//   case TOKEN::CHARACTER_CONSTANT:
-//     return CharacterConstant();
-//   default:
-//     break;
-//   }
-//   return nullptr; // placeholder.
-// }
-
-// Constant *Parser::IntegerConstant() {
-//   auto token = Match(TOKEN::INTEGER_CONTANT);
-//   const long value = std::stol(token->value());
-//   return new Constant(token, value);
-// }
-
-// Constant *Parser::FloatingConstant() {
-//   auto token = Match(TOKEN::FLOATING_CONSTANT);
-//   const double value = std::stod(token->value());
-//   return new Constant(token, value);
-// }
-
-// Constant *Parser::EnumerationConstant() {
-//   // TODO: Think about this case.
-//   return nullptr;
-// }
-
-// Constant *Parser::CharacterConstant() {
-//   auto token = ConsumeToken();
-//   const char value = stoc(token->value());
-//   return new Constant(token, value);
-// }
+std::unique_ptr<Expr> Parser::Expression() {
+  auto expr = AssignmentExpr();
+  return std::move(expr);
+  // TODO: expression, assignment-expression
+}
 
 // const char stoc(const std::string &str) {
 //   // TODO: Parse case starting with 'u', 'L', 'U'
@@ -118,562 +71,602 @@
 //   }
 // }
 
-// StringLiteral *Parser::StrLiteral() {
-//   auto token = ConsumeToken();
-//   const auto &str_value = token->value();
-//   return new StringLiteral(token, str_value);
-// }
+/**
+ * The left recursions are re-written as:
+ * postfix-expression
+ *   -> ( type-name ) { initialize-list } postfix-expression'
+ *    | ( type-name ) { initialize-list , } postfix-expression'
+ *    | primary-expression postfix-expression'
+ *
+ * postfix-expression'
+ *   -> [ expression ] postfix-expression'
+ *    | ( argument-expression-list_{opt} ) postfix-expression'
+ *    | .  identifier postfix-expression'
+ *    | -> identifier postfix-expression'
+ *    | ++ postfix-expression'
+ *    | -- postfix-expression'
+ *    | $epsilon$
+ */
+std::unique_ptr<Expr> Parser::PostfixExpr() {
+  auto expr = PrimaryExpression();
+  PostfixExprPrime(expr);
+  return std::move(expr);
+  // TODO: support compound literal feature.
+  // Error("Compound literals feature is not supported yet.");
+}
 
-// /**
-//  * The left recursions are re-written as:
-//  * postfix-expression  -> ( type-name ) { initialize-list }
-//  postfix-expression'
-//  *                      | ( type-name ) { initialize-list , }
-//  * postfix-expression' | primary-expression postfix-expression'
-//  * postfix-expression' -> [ expression ] postfix-expression'
-//  *                      | ( argument-expression-list_{opt} )
-//  postfix-expression'
-//  *                      | .  identifier postfix-expression'
-//  *                      | -> identifier postfix-expression'
-//  *                      | ++ postfix-expression'
-//  *                      | -- postfix-expression'
-//  *                      | $epsilon$
-//  */
-// Expr *Parser::PostfixExpr() {
-//   Expr *primary_expr = PrimaryExpr();
-//   return PostfixExprPrime(primary_expr);
-//   // TODO: support compound literal feature.
-//   // Error("Compound literals feature is not supported yet.");
-// }
+void Parser::PostfixExprPrime(std::unique_ptr<Expr> &expr) {
+  auto token = PeekToken();
+  switch (token->tag()) {
+  case TOKEN::LSQUBRKT:
+    ArraySubscripting(expr);
+    break;
+  case TOKEN::LPAR:
+    FunctionCall(expr);
+    break;
+  case TOKEN::DOT:
+  case TOKEN::PTR_MEM_REF:
+    MemberReference(expr);
+    break;
+  case TOKEN::INCREMENT:
+    PostfixIncrement(expr);
+    break;
+  case TOKEN::DECREMENT:
+    PostfixDecrement(expr);
+    break;
+  default:
+    return;
+  }
+  PostfixExprPrime(expr);
+}
 
-// Expr *Parser::PostfixExprPrime(Expr *ptr) {
-//   auto token = PeekToken();
-//   switch (token->tag()) {
-//   case TOKEN::LSQUBRKT:
-//     ptr = ArraySubscripting(ptr);
-//     break;
-//   case TOKEN::LPAR:
-//     ptr = FunctionCall(ptr);
-//     break;
-//   case TOKEN::DOT:
-//   case TOKEN::PTR_MEM_REF:
-//     ptr = MemberReference(ptr);
-//     break;
-//   case TOKEN::INCREMENT:
-//     ptr = PostfixIncrement(ptr);
-//     break;
-//   case TOKEN::DECREMENT:
-//     ptr = PostfixDecrement(ptr);
-//     break;
-//   default:
-//     // TODO: Double-check the implementation here.
-//     return ptr;
-//   }
-//   return PostfixExprPrime(ptr);
-// }
+/**
+ * ptr [offset]:
+ * syntax sugar for equivalent expression:
+ * *(ptr + offset)
+ */
+void Parser::ArraySubscripting(std::unique_ptr<Expr> &expr) {
+  auto token = PeekToken();
+  Match(TOKEN::LSQUBRKT);
+  auto offset = Expression();
+  Match(TOKEN::RSQUBRKT);
+  // Handle ptr_to = ptr + offset
+  std::unique_ptr<Expr> point_to = std::make_unique<BinaryOperatorExpr>(OP::PLUS, expr, offset);
+  // return dereference(ptr_to)
+  auto dereference =
+      std::make_unique<UnaryOperatorExpr>(OP::DEREFERENCE, point_to, token);
+  expr = std::move(dereference);
+}
 
-// /**
-//  * ptr [offset]:
-//  * syntax sugar for equivalent expression:
-//  * *(ptr + offset)
-//  */
-// Expr *Parser::ArraySubscripting(Expr *ptr) {
-//   auto token = Match(TOKEN::LSQUBRKT);
-//   auto offset = Expression();
-//   Match(TOKEN::RSQUBRKT);
-//   // Handle ptr_to = ptr + offset
-//   auto ptr_to = new BinaryOperatorExpr(TOKEN::ADD, ptr, offset);
-//   // return dereference(ptr_to)
-//   return new UnaryOperatorExpr(TOKEN::STAR, ptr_to, token);
-// }
+void Parser::FunctionCall(std::unique_ptr<Expr> &designator) {
+  auto token = PeekToken();
+  Match(TOKEN::LPAR);
+  auto function_call = std::make_unique<FunctionCallExpr>(designator, token);
+  if (PeekToken(TOKEN::RPAR)) {
+    Match(TOKEN::RPAR);
+    designator = std::move(function_call);
+  } else {
+    auto argument_expression_list = ArgumentExpressionList();
+    function_call->AddParameters(argument_expression_list);
+    Match(TOKEN::RPAR);
+    designator = std::move(function_call);
+  }
+}
 
-// Expr *Parser::FunctionCall(Expr *designator) {
-//   Match(TOKEN::LPAR);
-//   std::list<Expr *> argument_list;
-//   if (PeekToken(TOKEN::RPAR)) {
-//     Match(TOKEN::RPAR);
-//   } else {
-//     // TODO: Handle argument-expression-list_{opt}
-//     Match(TOKEN::RPAR);
-//   }
-//   // TODO: return FunctionCall node.
-//   return new FunctionCallExpr(designator, argument_list);
-// }
+std::vector<std::unique_ptr<Expr>> Parser::ArgumentExpressionList() {
+  std::vector<std::unique_ptr<Expr>> argument_expressions;
+  return std::move(argument_expressions);
+}
 
-// Expr *Parser::MemberReference(Expr *ptr) {
-//   if (PeekToken(TOKEN::PTR_MEM_REF)) {
-//     Match(TOKEN::PTR_MEM_REF);
-//   } else if (PeekToken(TOKEN::DOT)) {
-//     Match(TOKEN::DOT);
-//   } else {
-//     Error("MemberReference error.");
-//   }
-//   auto token = PeekToken();
-//   Match(TOKEN::IDENTIFIER);
-//   // TODO: return pointer of MemberReference node.
-//   return nullptr;
-// }
+void Parser::MemberReference(std::unique_ptr<Expr> &ptr) {
+  OP op;
+  if (PeekToken(TOKEN::PTR_MEM_REF)) {
+    Match(TOKEN::PTR_MEM_REF);
+    op = OP::ARROW_REFERENCE;
+  } else if (PeekToken(TOKEN::DOT)) {
+    Match(TOKEN::DOT);
+    op = OP::POINT_REFERENCE;
+  } else {
+    Error("MemberReference error.");
+  }
+  auto token = PeekToken();
+  Match(TOKEN::IDENTIFIER);
+  std::unique_ptr<Expr> identifier = std::make_unique<Identifier>(
+      token, IdentifierNameSpace::STRUCT_UNION_MEM);
+  auto expr = std::make_unique<BinaryOperatorExpr>(op, ptr, identifier, token);
+  ptr = std::move(expr);
+}
 
-// Expr *Parser::PostfixIncrement(Expr *operand) {
-//   auto token = Match(TOKEN::INCREMENT);
-//   // Return pointer of Increment node.
-//   return new UnaryOperatorExpr(TOKEN::INCREMENT, operand, token);
-// }
+void Parser::PostfixIncrement(std::unique_ptr<Expr> &operand) {
+  auto token = Match(TOKEN::INCREMENT);
+  auto expr =
+      std::make_unique<UnaryOperatorExpr>(OP::POSTFIX_INC, operand, token);
+  operand = std::move(expr);
+}
 
-// Expr *Parser::PostfixDecrement(Expr *operand) {
-//   auto token = Match(TOKEN::DECREMENT);
-//   // Return pointer of Decrement node.
-//   return new UnaryOperatorExpr(TOKEN::DECREMENT, operand, token);
-// }
+void Parser::PostfixDecrement(std::unique_ptr<Expr> &operand) {
+  auto token = Match(TOKEN::DECREMENT);
+  auto expr =
+      std::make_unique<UnaryOperatorExpr>(OP::POSTFIX_DEC, operand, token);
+  operand = std::move(expr);
+}
 
 // Expr *Parser::CompoundLiterals(Expr *ptr) {
 //   // TODO: implement compound literals feature.
 //   return nullptr;
 // }
 
-// Expr *Parser::UnaryExpr() {
-//   auto token = PeekToken();
-//   Expr *operand = nullptr;
-//   switch (token->tag()) {
-//   case TOKEN::INCREMENT:
-//     token = PrefixIncrement();
-//     operand = UnaryExpr();
-//     return new UnaryOperatorExpr(TOKEN::INCREMENT, operand, token);
-//   case TOKEN::DECREMENT:
-//     token = PrefixDecrement();
-//     operand = UnaryExpr();
-//     return new UnaryOperatorExpr(TOKEN::INCREMENT, operand, token);
-//   case TOKEN::SIZEOF:
-//     break;
-//   case TOKEN::ALIGNOF:
-//     break;
-//   case TOKEN::AND:
-//     token = UnaryOperator();
-//     operand = CastExpr();
-//     return new UnaryOperatorExpr(TOKEN::AND, operand, token);
-//   case TOKEN::STAR:
-//     token = UnaryOperator();
-//     operand = CastExpr();
-//     return new UnaryOperatorExpr(TOKEN::STAR, operand, token);
-//   case TOKEN::ADD:
-//     token = UnaryOperator();
-//     operand = CastExpr();
-//     return new UnaryOperatorExpr(TOKEN::ADD, operand, token);
-//   case TOKEN::SUB:
-//     token = UnaryOperator();
-//     operand = CastExpr();
-//     return new UnaryOperatorExpr(TOKEN::SUB, operand, token);
-//   case TOKEN::NOT:
-//     token = UnaryOperator();
-//     operand = CastExpr();
-//     return new UnaryOperatorExpr(TOKEN::NOT, operand, token);
-//   case TOKEN::LOGICAL_NOT:
-//     token = UnaryOperator();
-//     operand = CastExpr();
-//     return new UnaryOperatorExpr(TOKEN::NOT, operand, token);
-//   default:
-//     return PostfixExpr();
-//   }
-//   return nullptr; // placeholer
-// }
+std::unique_ptr<Expr> Parser::UnaryExpr() {
+  auto token = PeekToken();
+  auto tag = token->tag();
+  if (tag == TOKEN::INCREMENT) {
+    return std::move(PrefixIncrement());
+  } else if (tag == TOKEN::DECREMENT) {
+    return std::move(PrefixDecrement());
+  } else if (tag == TOKEN::SIZEOF) {
+    return std::move(Sizeof());
+  } else if (tag == TOKEN::ALIGNOF) {
+    return nullptr; // TODO
+  } else if (tag == TOKEN::AND || tag == TOKEN::STAR || tag == TOKEN::ADD ||
+             tag == TOKEN::SUB || tag == TOKEN::NOT ||
+             tag == TOKEN::LOGICAL_NOT) {
+    OP op;
+    if (tag == TOKEN::AND)
+      op = OP::GET_ADDRESS;
+    else if (tag == TOKEN::STAR)
+      op = OP::DEREFERENCE;
+    else if (tag == TOKEN::ADD)
+      op = OP::POSITIVE;
+    else if (tag == TOKEN::SUB)
+      op = OP::NEGATIVE;
+    // else if (tag == TOKEN::NOT)
+    // op =
+    else if (tag == TOKEN::LOGICAL_NOT)
+      op = OP::NEGATION;
+    auto token = ConsumeToken();
+    auto operand = CastExpr();
+    return std::make_unique<UnaryOperatorExpr>(op, operand, token);
+  } else {
+    return std::move(PostfixExpr());
+  }
+}
 
-// inline Token *Parser::PrefixIncrement() { return Match(TOKEN::INCREMENT); }
+std::unique_ptr<Expr> Parser::PrefixIncrement() {
+  auto token = PeekToken();
+  Match(TOKEN::INCREMENT);
+  auto operand = UnaryExpr();
+  auto expr =
+      std::make_unique<UnaryOperatorExpr>(OP::PREFIX_INC, operand, token);
+  return std::move(expr);
+}
 
-// inline Token *Parser::PrefixDecrement() { return Match(TOKEN::DECREMENT); }
+std::unique_ptr<Expr> Parser::PrefixDecrement() {
+  auto token = PeekToken();
+  Match(TOKEN::DECREMENT);
+  auto operand = UnaryExpr();
+  auto expr =
+      std::make_unique<UnaryOperatorExpr>(OP::PREFIX_DEC, operand, token);
+  return std::move(expr);
+}
 
-// Expr *Parser::Sizeof() { return nullptr; }
+std::unique_ptr<Expr> Parser::Sizeof() {
+  auto token = Match(TOKEN::SIZEOF);
+  auto expr = UnaryExpr();
+  auto sizeof_expr =
+      std::make_unique<UnaryOperatorExpr>(OP::SIZEOF, expr, token);
+  // TODO: sizeof (type-name)
+  return std::move(sizeof_expr);
+}
 
 // Expr *Parser::Alignof() { return nullptr; }
 
 // Token *Parser::UnaryOperator() { return ConsumeToken(); }
 
-// Expr *Parser::CastExpr() {
-//   if (PeekToken(TOKEN::LPAR) && false) {
-//     // TODO: Handle ( type-name ) cast-expresssion
-//     return nullptr;
-//   }
-//   return UnaryExpr();
-// }
+std::unique_ptr<Expr> Parser::CastExpr() {
+  if (PeekToken(TOKEN::LPAR) && false) {
+    // TODO: Handle ( type-name ) cast-expresssion
+    return nullptr;
+  }
+  return UnaryExpr();
+}
 
-// /**
-//  * multiplicative-expression  ->
-//  *                             cast-expression
-//  *                           | multiplicative-expression * cast-expression
-//  *                           | multiplicative-expression / cast-expression
-//  *                           | multiplicative-expression % cast-expression
-//  *
-//  * which is a left recursive formula and can be re-written as:
-//  * multiplicative-expression  ->
-//  *                             cast-expression multiplicative-expression'
-//  * multiplicative-expression' ->
-//  *                             * cast-expression multiplicative-expression'
-//  *                           | / cast-expression multiplicative-expression'
-//  *                           | % cast-expression multiplicative-expression'
-//  *                           | $\epsilon$
-//  */
-// Expr *Parser::MultiplicativeExpr() {
-//   auto expr1 = CastExpr();
-//   return MultiplicativeExprPrime(expr1);
-// }
+/**
+ * multiplicative-expression  ->
+ *                             cast-expression
+ *                           | multiplicative-expression * cast-expression
+ *                           | multiplicative-expression / cast-expression
+ *                           | multiplicative-expression % cast-expression
+ *
+ * which is a left recursive formula and can be re-written as:
+ * multiplicative-expression  ->
+ *                             cast-expression multiplicative-expression'
+ * multiplicative-expression' ->
+ *                             * cast-expression multiplicative-expression'
+ *                           | / cast-expression multiplicative-expression'
+ *                           | % cast-expression multiplicative-expression'
+ *                           | $\epsilon$
+ */
+std::unique_ptr<Expr> Parser::MultiplicativeExpr() {
+  auto expr1 = CastExpr();
+  MultiplicativeExprPrime(expr1);
+  return std::move(expr1);
+}
 
-// Expr *Parser::MultiplicativeExprPrime(Expr *operand1) {
-//   Token *token = PeekToken();
-//   Expr *operand2 = nullptr;
-//   Expr *expr_ptr = nullptr;
-//   switch (token->tag()) {
-//   case TOKEN::STAR:
-//     Match(TOKEN::STAR);
-//     operand2 = CastExpr();
-//     expr_ptr = new BinaryOperatorExpr(TOKEN::STAR, operand1, operand2,
-//     token); break;
-//   case TOKEN::DIV:
-//     Match(TOKEN::DIV);
-//     operand2 = CastExpr();
-//     expr_ptr = new BinaryOperatorExpr(TOKEN::DIV, operand1, operand2, token);
-//     break;
-//   case TOKEN::MOD:
-//     Match(TOKEN::MOD);
-//     operand2 = CastExpr();
-//     expr_ptr = new BinaryOperatorExpr(TOKEN::MOD, operand1, operand2, token);
-//     break;
-//   default:
-//     return operand1;
-//   }
-//   return MultiplicativeExprPrime(expr_ptr);
-// }
+void Parser::MultiplicativeExprPrime(std::unique_ptr<Expr> &operand1) {
+  auto token = PeekToken();
+  auto tag = token->tag();
+  if (tag == TOKEN::STAR) {
+    Match(TOKEN::STAR);
+    auto operand2 = CastExpr();
+    operand1 = std::make_unique<BinaryOperatorExpr>(OP::MULTIPLY, operand1,
+                                                    operand2, token);
+  } else if (tag == TOKEN::DIV) {
+    Match(TOKEN::DIV);
+    auto operand2 = CastExpr();
+    operand1 = std::make_unique<BinaryOperatorExpr>(OP::DIVIDE, operand1,
+                                                    operand2, token);
+  } else if (tag == TOKEN::MOD) {
+    Match(TOKEN::MOD);
+    auto operand2 = CastExpr();
+    operand1 = std::make_unique<BinaryOperatorExpr>(OP::MOD, operand1, operand2,
+                                                    token);
+  } else {
+    return;
+  }
+  return MultiplicativeExprPrime(operand1);
+}
 
-// /**
-//  * additive-expression  ->
-//  *                          multiplicative-expression
-//  *                          | additive-expression + multiplicative-expression
-//  *                          | additive-expression - multiplicative-expression
-//  *
-//  * which is a left recursive formula and can be re-written as:
-//  * additive-expression  ->
-//  *                             multiplicative additive-expression'
-//  * additive-expression' ->
-//  *                             + multiplicative-expression
-//  additive-expression'
-//  *                           | - multiplicative-expression
-//  additive-expression'
-//  *                           | $\epsilon$
-//  */
-// Expr *Parser::AdditiveExpr() {
-//   auto operand1 = MultiplicativeExpr();
-//   return AdditiveExprPrime(operand1);
-// }
+/**
+ * additive-expression  ->
+ *                          multiplicative-expression
+ *                          | additive-expression + multiplicative-expression
+ *                          | additive-expression - multiplicative-expression
+ *
+ * which is a left recursive formula and can be re-written as:
+ * additive-expression  ->
+ *                             multiplicative additive-expression'
+ * additive-expression' ->
+ *                             + multiplicative-expression
+ additive-expression'
+ *                           | - multiplicative-expression
+ additive-expression'
+ *                           | $\epsilon$
+ */
+std::unique_ptr<Expr> Parser::AdditiveExpr() {
+  auto operand1 = MultiplicativeExpr();
+  AdditiveExprPrime(operand1);
+  return std::move(operand1);
+}
 
-// Expr *Parser::AdditiveExprPrime(Expr *operand1) {
-//   Token *token = PeekToken();
-//   Expr *operand2 = nullptr;
-//   Expr *expr_ptr = nullptr;
-//   switch (token->tag()) {
-//   case TOKEN::ADD:
-//     Match(TOKEN::ADD);
-//     operand2 = MultiplicativeExpr();
-//     expr_ptr = new BinaryOperatorExpr(TOKEN::ADD, operand1, operand2, token);
-//     break;
-//   case TOKEN::SUB:
-//     Match(TOKEN::SUB);
-//     operand2 = MultiplicativeExpr();
-//     expr_ptr = new BinaryOperatorExpr(TOKEN::SUB, operand1, operand2, token);
-//     break;
-//   default:
-//     return operand1;
-//   }
-//   return AdditiveExprPrime(expr_ptr);
-// }
+void Parser::AdditiveExprPrime(std::unique_ptr<Expr> &operand1) {
+  auto token = PeekToken();
+  auto tag = token->tag();
+  if (tag == TOKEN::ADD) {
+    Match(TOKEN::ADD);
+    auto operand2 = MultiplicativeExpr();
+    operand1 = std::make_unique<BinaryOperatorExpr>(OP::PLUS, operand1, operand2, token);
+  } else if (tag == TOKEN::SUB) {
+    Match(TOKEN::SUB);
+    auto operand2 = MultiplicativeExpr();
+    operand1 = std::make_unique<BinaryOperatorExpr>(OP::MINUS, operand1, operand2, token);
+  } else {
+    return;
+  }
+  AdditiveExprPrime(operand1);
+}
 
-// /**
-//  * shift-expression  ->
-//  *                      additive-expression
-//  *                    | shift-expression << additive-expression
-//  *                    | shift-expression >> additive-expression
-//  * which is a left recursive formula and can be re-written as:
-//  *
-//  * shift-expression  ->
-//  *                      additive-expression shift-expression'
-//  * shift-expression' ->
-//  *                      << additive-expression shift-expression'
-//  *                    | >> additive-expression shift-expression'
-//  *                    | ${epsilon}
-//  */
-// Expr *Parser::ShiftExpr() {
-//   auto operand1 = AdditiveExpr();
-//   return ShiftExprPrime(operand1);
-// }
+/**
+ * shift-expression  ->
+ *                      additive-expression
+ *                    | shift-expression << additive-expression
+ *                    | shift-expression >> additive-expression
+ * which is a left recursive formula and can be re-written as:
+ *
+ * shift-expression  ->
+ *                      additive-expression shift-expression'
+ * shift-expression' ->
+ *                      << additive-expression shift-expression'
+ *                    | >> additive-expression shift-expression'
+ *                    | ${epsilon}
+ */
+std::unique_ptr<Expr> Parser::ShiftExpr() {
+  auto operand1 = AdditiveExpr();
+  ShiftExprPrime(operand1);
+  return std::move(operand1);
+}
 
-// Expr *Parser::ShiftExprPrime(Expr *operand1) {
-//   Token *token = PeekToken();
-//   Expr *operand2 = nullptr;
-//   Expr *expr_ptr = nullptr;
-//   switch (token->tag()) {
-//   case TOKEN::LEFT_SHIFT:
-//     Match(TOKEN::LEFT_SHIFT);
-//     operand2 = AdditiveExpr();
-//     expr_ptr =
-//         new BinaryOperatorExpr(TOKEN::LEFT_SHIFT, operand1, operand2, token);
-//     break;
-//   case TOKEN::RIGHT_SHIFT:
-//     Match(TOKEN::RIGHT_SHIFT);
-//     operand2 = AdditiveExpr();
-//     expr_ptr =
-//         new BinaryOperatorExpr(TOKEN::RIGHT_SHIFT, operand1, operand2,
-//         token);
-//     break;
-//   default:
-//     return operand1;
-//   }
-//   return ShiftExprPrime(expr_ptr);
-// }
+void Parser::ShiftExprPrime(std::unique_ptr<Expr> &operand1) {
+  auto token = PeekToken();
+  auto tag = token->tag();
+  if (tag == TOKEN::LEFT_SHIFT) {
+    Match(TOKEN::LEFT_SHIFT);
+    auto operand2 = AdditiveExpr();
+    operand1 = std::make_unique<BinaryOperatorExpr>(OP::LEFT_SHIFT, operand1,
+                                                    operand2, token);
+  } else if (tag == TOKEN::RIGHT_SHIFT) {
+    Match(TOKEN::RIGHT_SHIFT);
+    auto operand2 = AdditiveExpr();
+    operand1 = std::make_unique<BinaryOperatorExpr>(OP::RIGHT_SHIFT, operand1,
+                                                    operand2, token);
+  } else {
+    return;
+  }
+  ShiftExprPrime(operand1);
+}
 
-// /**
-//  * relational-expression  ->
-//  *                            shift-expression
-//  *                          | relational-expression < shift-expression
-//  *                          | relational-expression > shift-expression
-//  *                          | relational-expression <= shift-expression
-//  *                          | relational-expression >= shift-expression
-//  *
-//  * which is a left recursive formula and can be re-written as:
-//  *
-//  * relational-expression  ->
-//  *                            shift-expression relational-expression'
-//  * relational-expression' ->  < shift-expression relational-expression'
-//  *                          | > shift-expression relational-expression'
-//  *                          | >= shift-expression relational-expression'
-//  *                          | <= shift-expression relational-expression'
-//  *                          | ${epsilon}
-//  */
-// Expr *Parser::RelationalExpr() {
-//   auto operand1 = ShiftExpr();
-//   return RelationalExprPrime(operand1);
-// }
+/**
+ * relational-expression  ->
+ *                            shift-expression
+ *                          | relational-expression < shift-expression
+ *                          | relational-expression > shift-expression
+ *                          | relational-expression <= shift-expression
+ *                          | relational-expression >= shift-expression
+ *
+ * which is a left recursive formula and can be re-written as:
+ *
+ * relational-expression  ->
+ *                            shift-expression relational-expression'
+ * relational-expression' ->  < shift-expression relational-expression'
+ *                          | > shift-expression relational-expression'
+ *                          | >= shift-expression relational-expression'
+ *                          | <= shift-expression relational-expression'
+ *                          | ${epsilon}
+ */
+std::unique_ptr<Expr> Parser::RelationalExpr() {
+  auto operand1 = ShiftExpr();
+  RelationalExprPrime(operand1);
+  return std::move(operand1);
+}
 
-// Expr *Parser::RelationalExprPrime(Expr *operand1) {
-//   Token *token = PeekToken();
-//   Expr *operand2 = nullptr;
-//   Expr *expr_ptr = nullptr;
-//   switch (token->tag()) {
-//   case TOKEN::LESS:
-//     Match(TOKEN::LESS);
-//     operand2 = ShiftExpr();
-//     expr_ptr = new BinaryOperatorExpr(TOKEN::LESS, operand1, operand2,
-//     token); break;
-//   case TOKEN::GREATER:
-//     Match(TOKEN::GREATER);
-//     operand2 = ShiftExpr();
-//     expr_ptr =
-//         new BinaryOperatorExpr(TOKEN::GREATER, operand1, operand2, token);
-//     break;
-//   case TOKEN::LE:
-//     Match(TOKEN::LE);
-//     operand2 = ShiftExpr();
-//     expr_ptr = new BinaryOperatorExpr(TOKEN::LE, operand1, operand2, token);
-//     break;
-//   case TOKEN::GE:
-//     Match(TOKEN::GE);
-//     operand2 = ShiftExpr();
-//     expr_ptr = new BinaryOperatorExpr(TOKEN::GE, operand1, operand2, token);
-//     break;
-//   default:
-//     return operand1;
-//   }
-//   return RelationalExprPrime(expr_ptr);
-// }
+void Parser::RelationalExprPrime(std::unique_ptr<Expr> &operand1) {
+  auto token = PeekToken();
+  auto tag = token->tag();
 
-// /**
-//  * equality-expression  ->
-//  *                            relational-expression
-//  *                          | equality-expression == relational-expression
-//  *                          | equality-expression != relational-expression
-//  *
-//  * which is a left recursive formula and can be re-written as:
-//  *
-//  * equality-expression  ->
-//  *                            relational-expression equality-expression'
-//  * equality-expression' ->
-//  *                            == relational-expression equality-expression'
-//  *                          | != relational-expression equality-expression'
-//  *                          | ${epsilon}
-//  */
-// Expr *Parser::EqualityExpr() {
-//   Expr *operand1 = RelationalExpr();
-//   return EqualityExprPrime(operand1);
-// }
+  if (tag == TOKEN::LESS) {
+    Match(TOKEN::LESS);
+    auto operand2 = ShiftExpr();
+    operand1 = std::make_unique<BinaryOperatorExpr>(OP::LESS, operand1,
+                                                    operand2, token);
+  } else if (tag == TOKEN::GREATER) {
+    Match(TOKEN::GREATER);
+    auto operand2 = ShiftExpr();
+    operand1 = std::make_unique<BinaryOperatorExpr>(OP::GREATER, operand1,
+                                                    operand2, token);
+  } else if (tag == TOKEN::LE) {
+    Match(TOKEN::LE);
+    auto operand2 = ShiftExpr();
+    operand1 =
+        std::make_unique<BinaryOperatorExpr>(OP::LE, operand1, operand2, token);
+  } else if (tag == TOKEN::GE) {
+    Match(TOKEN::GE);
+    auto operand2 = ShiftExpr();
+    operand1 =
+        std::make_unique<BinaryOperatorExpr>(OP::GE, operand1, operand2, token);
+  } else {
+    return;
+  }
+  RelationalExprPrime(operand1);
+}
 
-// Expr *Parser::EqualityExprPrime(Expr *operand1) {
-//   Token *token = PeekToken();
-//   Expr *operand2 = nullptr;
-//   Expr *expr_ptr = nullptr;
-//   switch (token->tag()) {
-//   case TOKEN::EQ:
-//     Match(TOKEN::EQ);
-//     operand2 = RelationalExpr();
-//     expr_ptr = new BinaryOperatorExpr(TOKEN::EQ, operand1, operand2, token);
-//     break;
-//   case TOKEN::NE:
-//     Match(TOKEN::NE);
-//     operand2 = RelationalExpr();
-//     expr_ptr = new BinaryOperatorExpr(TOKEN::NE, operand1, operand2, token);
-//     break;
-//   default:
-//     return operand1;
-//   }
-//   return EqualityExprPrime(expr_ptr);
-// }
+/**
+ * equality-expression  ->
+ *                            relational-expression
+ *                          | equality-expression == relational-expression
+ *                          | equality-expression != relational-expression
+ *
+ * which is a left recursive formula and can be re-written as:
+ *
+ * equality-expression  ->
+ *                            relational-expression equality-expression'
+ * equality-expression' ->
+ *                            == relational-expression equality-expression'
+ *                          | != relational-expression equality-expression'
+ *                          | ${epsilon}
+ */
+std::unique_ptr<Expr> Parser::EqualityExpr() {
+  auto operand1 = RelationalExpr();
+  EqualityExprPrime(operand1);
+  return std::move(operand1);
+}
 
-// /**
-//  * AND-expression  ->
-//  *                            equality-expression
-//  *                          | AND-expression & equality-expression
-//  *
-//  * which is a left recursive formula and is needed to be re-written.
-//  */
-// Expr *Parser::ANDExpr() {
-//   auto operand1 = EqualityExpr();
-//   return ANDExprPrime(operand1);
-// }
+void Parser::EqualityExprPrime(std::unique_ptr<Expr> &operand1) {
+  auto token = PeekToken();
+  auto tag = token->tag();
 
-// Expr *Parser::ANDExprPrime(Expr *operand1) {
-//   Token *token = PeekToken();
-//   Expr *operand2 = nullptr;
-//   Expr *expr_ptr = nullptr;
-//   switch (token->tag()) {
-//   case TOKEN::AND:
-//     Match(TOKEN::AND);
-//     operand2 = EqualityExpr();
-//     expr_ptr = new BinaryOperatorExpr(TOKEN::AND, operand1, operand2, token);
-//     break;
-//   default:
-//     return operand1;
-//   }
-//   return ANDExprPrime(expr_ptr);
-// }
+  if (tag == TOKEN::EQ) {
+    Match(TOKEN::EQ);
+    auto operand2 = RelationalExpr();
+    operand1 =
+        std::make_unique<BinaryOperatorExpr>(OP::EQ, operand1, operand2, token);
+  } else if (tag == TOKEN::NE) {
+    Match(TOKEN::NE);
+    auto operand2 = RelationalExpr();
+    operand1 =
+        std::make_unique<BinaryOperatorExpr>(OP::NE, operand1, operand2, token);
+  } else {
+    return;
+  }
+  EqualityExprPrime(operand1);
+}
 
-// /**
-//  * XOR-expression   ->
-//  *                        AND-expression
-//  *                      | XOR-expression ^ AND-expression
-//  *
-//  * which is a left-recursive expression, and needed to be rewritten as:
-//  *
-//  * XOR-expression   ->    AND-expression XOR-expression'
-//  * XOR-expression'  ->    ^ AND-expression XOR-expression'
-//  *                      | ${epsilon}
-//  */
-// Expr *Parser::XORExpr() {
-//   auto operand1 = ANDExpr();
-//   return XORExprPrime(operand1);
-// }
+/**
+ * AND-expression  ->
+ *                            equality-expression
+ *                          | AND-expression & equality-expression
+ *
+ * which is a left recursive formula and is needed to be re-written.
+ */
+std::unique_ptr<Expr> Parser::ANDExpr() {
+  auto operand1 = EqualityExpr();
+  ANDExprPrime(operand1);
+  return std::move(operand1);
+}
 
-// Expr *Parser::XORExprPrime(Expr *operand1) {
-//   Token *token = PeekToken();
-//   Expr *operand2 = nullptr;
-//   Expr *expr_ptr = nullptr;
-//   switch (token->tag()) {
-//   case TOKEN::XOR:
-//     Match(TOKEN::XOR);
-//     operand2 = ANDExpr();
-//     expr_ptr = new BinaryOperatorExpr(TOKEN::XOR, operand1, operand2, token);
-//     break;
-//   default:
-//     return operand1;
-//   }
-//   return XORExprPrime(expr_ptr);
-// }
+void Parser::ANDExprPrime(std::unique_ptr<Expr> &operand1) {
+  auto token = PeekToken();
+  auto tag = token->tag();
+  if (tag == TOKEN::AND) {
+    Match(TOKEN::AND);
+    auto operand2 = EqualityExpr();
+    operand1 = std::make_unique<BinaryOperatorExpr>(OP::AND, operand1, operand2,
+                                                    token);
+  } else {
+    return;
+  }
+  ANDExprPrime(operand1);
+}
 
-// /**
-//  * OR-expression    ->
-//  *                      XOR-expression
-//  *                      OR-expression | XOR-expression
-//  * which is a left recursive expression, and needed to be rewritten as:
-//  * OR-expression    ->
-//  *                      XOR-expression OR-expression'
-//  * OR-expression'   ->  | XOR-expression OR-expression'
-//  *                  ->  ${epsilon}
-//  */
-// Expr *Parser::ORExpr() {
-//   auto operand1 = XORExpr();
-//   return ORExprPrime(operand1);
-// }
+/**
+ * XOR-expression   ->
+ *                        AND-expression
+ *                      | XOR-expression ^ AND-expression
+ *
+ * which is a left-recursive expression, and needed to be rewritten as:
+ *
+ * XOR-expression   ->    AND-expression XOR-expression'
+ * XOR-expression'  ->    ^ AND-expression XOR-expression'
+ *                      | ${epsilon}
+ */
+std::unique_ptr<Expr> Parser::XORExpr() {
+  auto operand1 = ANDExpr();
+  XORExprPrime(operand1);
+  return std::move(operand1);
+}
 
-// Expr *Parser::ORExprPrime(Expr *operand1) {
-//   Token *token = PeekToken();
-//   Expr *operand2 = nullptr;
-//   Expr *expr_ptr = nullptr;
-//   switch (token->tag()) {
-//   case TOKEN::OR:
-//     Match(TOKEN::OR);
-//     operand2 = XORExpr();
-//     expr_ptr = new BinaryOperatorExpr(TOKEN::OR, operand1, operand2, token);
-//     break;
-//   default:
-//     return operand1;
-//   }
-//   return ORExprPrime(expr_ptr);
-// }
+void Parser::XORExprPrime(std::unique_ptr<Expr> &operand1) {
+  auto token = PeekToken();
+  auto tag = token->tag();
+  if (tag == TOKEN::XOR) {
+    Match(TOKEN::XOR);
+    auto operand2 = ANDExpr();
+    operand1 = std::make_unique<BinaryOperatorExpr>(OP::XOR, operand1, operand2,
+                                                    token);
+  } else {
+    return;
+  }
+  XORExprPrime(operand1);
+}
 
-// Expr *Parser::LogicalANDExpr() {
-//   auto operand1 = ORExpr();
-//   return LogicalANDExprPrime(operand1);
-// }
+/**
+ * OR-expression    ->
+ *                      XOR-expression
+ *                      OR-expression | XOR-expression
+ * which is a left recursive expression, and needed to be rewritten as:
+ * OR-expression    ->
+ *                      XOR-expression OR-expression'
+ * OR-expression'   ->  | XOR-expression OR-expression'
+ *                  ->  ${epsilon}
+ */
+std::unique_ptr<Expr> Parser::ORExpr() {
+  auto operand1 = XORExpr();
+  ORExprPrime(operand1);
+  return std::move(operand1);
+}
 
-// Expr *Parser::LogicalANDExprPrime(Expr *operand1) {
-//   Token *token = PeekToken();
-//   Expr *operand2 = nullptr;
-//   Expr *expr_ptr = nullptr;
-//   switch (token->tag()) {
-//   case TOKEN::LOGICAL_AND:
-//     Match(TOKEN::LOGICAL_AND);
-//     operand2 = ORExpr();
-//     expr_ptr =
-//         new BinaryOperatorExpr(TOKEN::LOGICAL_AND, operand1, operand2,
-//         token);
-//     break;
-//   default:
-//     return operand1;
-//   }
-//   return LogicalANDExprPrime(expr_ptr);
-// }
+void Parser::ORExprPrime(std::unique_ptr<Expr> &operand1) {
+  auto token = PeekToken();
+  auto tag = token->tag();
+  if (tag == TOKEN::OR) {
+    Match(TOKEN::OR);
+    auto operand2 = XORExpr();
+    operand1 =
+        std::make_unique<BinaryOperatorExpr>(OP::OR, operand1, operand2, token);
+  } else {
+    return;
+  }
+  ORExprPrime(operand1);
+}
 
-// Expr *Parser::LogicalORExpr() {
-//   auto operand1 = LogicalANDExpr();
-//   return LogicalORExprPrime(operand1);
-// }
+std::unique_ptr<Expr> Parser::LogicalANDExpr() {
+  auto operand1 = ORExpr();
+  LogicalANDExprPrime(operand1);
+  return std::move(operand1);
+}
 
-// Expr *Parser::LogicalORExprPrime(Expr *operand1) {
-//   Token *token = PeekToken();
-//   Expr *operand2 = nullptr;
-//   Expr *expr_ptr = nullptr;
-//   switch (token->tag()) {
-//   case TOKEN::LOGICAL_OR:
-//     Match(TOKEN::LOGICAL_OR);
-//     operand2 = LogicalANDExpr();
-//     expr_ptr =
-//         new BinaryOperatorExpr(TOKEN::LOGICAL_OR, operand1, operand2, token);
-//     break;
-//   default:
-//     return operand1;
-//   }
-//   return LogicalORExprPrime(expr_ptr);
-// }
+void Parser::LogicalANDExprPrime(std::unique_ptr<Expr> &operand1) {
+  auto token = PeekToken();
+  auto tag = token->tag();
+  if (tag == TOKEN::LOGICAL_AND) {
+    Match(TOKEN::LOGICAL_AND);
+    auto operand2 = ORExpr();
+    operand1 = std::make_unique<BinaryOperatorExpr>(OP::LOGICAL_AND, operand1,
+                                                    operand2, token);
+  } else {
+    return;
+  }
+  LogicalANDExprPrime(operand1);
+}
 
-// Expr *Parser::ConditionalExpr() {
-//   auto cond = ConditionalExpr();
-//   auto token = PeekToken();
-//   if (token->tag() == TOKEN::COND) {
-//     Match(TOKEN::COND);
-//     auto true_operand = Expression();
-//     Match(TOKEN::COLON);
-//     auto false_operand = ConditionalExpr();
-//     return new TenaryOperatorExpr(TOKEN::COND, TOKEN::COLON, cond,
-//     true_operand,
-//                                   false_operand, token);
-//   }
-//   return cond;
-// }
+std::unique_ptr<Expr> Parser::LogicalORExpr() {
+  auto operand1 = LogicalANDExpr();
+  LogicalORExprPrime(operand1);
+  return std::move(operand1);
+}
 
-// Expr *Parser::AssignmentExpr() { return nullptr; }
+void Parser::LogicalORExprPrime(std::unique_ptr<Expr> &operand1) {
+  auto token = PeekToken();
+  auto tag = token->tag();
+  if (tag == TOKEN::LOGICAL_OR) {
+    Match(TOKEN::LOGICAL_OR);
+    auto operand2 = LogicalANDExpr();
+    operand1 = std::make_unique<BinaryOperatorExpr>(OP::LOGICAL_OR, operand1,
+                                                    operand2, token);
+  } else {
+    return;
+  }
+  LogicalORExprPrime(operand1);
+}
 
-// Expr *Parser::ConstantExpr() { return ConditionalExpr(); }
+std::unique_ptr<Expr> Parser::ConditionalExpr() {
+  auto cond = ConditionalExpr();
+  auto token = PeekToken();
+  auto tag = token->tag();
+  if (tag == TOKEN::COND) {
+    Match(TOKEN::COND);
+    auto true_operand = Expression();
+    Match(TOKEN::COLON);
+    auto false_operand = ConditionalExpr();
+    auto expr = std::make_unique<TenaryOperatorExpr>(
+        OP::COND, OP::COLON, cond, true_operand, false_operand, token);
+    return std::move(expr);
+  }
+  return std::move(cond);
+}
+
+std::unique_ptr<Expr> Parser::AssignmentExpr() {
+  auto lhs = UnaryExpr();
+  auto token = PeekToken();
+  auto tag = token->tag();
+  OP op;
+  if (tag == TOKEN::ASSIGN) {
+    op = OP::ASSIGN;
+  } else if (tag == TOKEN::MUL_ASSIGN) {
+    op = OP::MULTIPLY_ASSIGN;
+  } else if (tag == TOKEN::DIV_ASSIGN) {
+    op = OP::DIVIDE_ASSIGN;
+  } else if (tag == TOKEN::MOD_ASSIGN) {
+    op = OP::MOD_ASSIGN;
+  } else if (tag == TOKEN::ADD_ASSIGN) {
+    op = OP::PLUS_ASSIGN;
+  } else if (tag == TOKEN::SUB_ASSIGN) {
+    op = OP::MINUS_ASSIGN;
+  } else if (tag == TOKEN::LEFT_ASSIGN) {
+    op = OP::LEFT_SHIFT_ASSIGN;
+  } else if (tag == TOKEN::RIGHT_ASSIGN) {
+    op = OP::RIGHT_SHIFT_ASSIGN;
+  } else if (tag == TOKEN::AND_ASSIGN) {
+    op = OP::AND_ASSIGN;
+  } else if (tag == TOKEN::NOT_ASSIGN) {
+    op = OP::NOT_ASSIGN;
+  } else if (tag == TOKEN::OR_ASSIGN) {
+    op = OP::OR_ASSIGN;
+  }
+  ConsumeToken();
+  auto rhs = AssignmentExpr();
+  auto expr = std::make_unique<BinaryOperatorExpr>(op, lhs, rhs, token);
+  return std::move(expr);
+}
+
+std::unique_ptr<Expr> Parser::ConstantExpr() {
+  return std::move(ConditionalExpr());
+}
