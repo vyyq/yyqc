@@ -1,59 +1,35 @@
 #ifndef YYQC_SRC_VALUE_H_
 #define YYQC_SRC_VALUE_H_
+#include <cwchar>
 #include <iostream>
 #include <memory>
 #include <string>
 #include <vector>
+#include <variant>
 
 class Value {
+  friend std::ostream& operator<<(std::ostream &os, const Value &value) {
+    auto val_ptr = &value._value;
+    if (auto pval = std::get_if<long long>(val_ptr)) {
+      os << "Integer value: " << *pval; 
+    } else if(auto pval = std::get_if<double>(val_ptr)) {
+      os << "Float value: " << *pval;
+    } else if (auto pval = std::get_if<char>(val_ptr)) {
+      os << "Char value: " << *pval;
+    } else {
+      os << "String value: " << *pval;
+    }
+    return os;
+  }
 public:
-  virtual ~Value(){};
-  virtual void print() const { std::cout << ""; };
-  virtual int IntValue() { return 0; }
-  virtual char CharValue() { return 0; }
-  virtual std::string StringValue() { return ""; }
-};
-
-class StringValue : public Value {
+  Value(long long x) : _value(x) {}
+  Value(double x) : _value(x) {}
+  Value(std::string x) : _value(std::move(x)) {}
+  ~Value(){}
+  void print() const { std::cout << ""; };
 private:
-  std::string _value;
-
-public:
-  StringValue(const std::string &str) : _value(str) {}
-  virtual void print() const override { std::cout << _value; }
+  std::variant<long long, double,char ,std::string> _value;
 };
 
-class CharValue : public Value {
-private:
-  char _value;
-
-public:
-  CharValue(const char ch) : _value(ch) {}
-};
-
-class IntValue : public Value {
-private:
-  long long _value;
-
-public:
-  IntValue(const long long l) : _value(l) {}
-};
-
-class FloatValue : public Value {
-private:
-  double _value;
-
-public:
-  FloatValue(const double d) : _value(d) {}
-};
-
-class IdentifierName : public Value {
-private:
-  std::string _value;
-
-public:
-  IdentifierName(const std::string &name) : _value(name) {}
-  virtual void print() const override { std::cout << _value; }
-};
 
 #endif

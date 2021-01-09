@@ -19,7 +19,7 @@
 #define DEBUG
 
 bool IsSpecifier(TOKEN tag);
-const char stoc(const std::string &);
+char stoc(const std::string &);
 
 class Parser {
 private:
@@ -40,7 +40,7 @@ private:
     assert(PeekToken(tag));
     return ConsumeToken();
   }
-  unsigned LexerScreenShot() { return _lexer->ScreenShot(); }
+  unsigned LexerSnapShot() { return _lexer->ScreenShot(); }
   void LexerPutBack(unsigned screenshot) { return _lexer->PutBack(screenshot); }
   std::shared_ptr<Scope> CurrentScope() { return _current_scope; }
   bool isRootScope() { return _current_scope->parent() == nullptr; }
@@ -132,12 +132,12 @@ public:
   void DeclarationList();
 
 private:
-  void PostfixExprPrime(std::unique_ptr<Expr> &);
-  void ArraySubscripting(std::unique_ptr<Expr> &);
-  void FunctionCall(std::unique_ptr<Expr> &);
-  void MemberReference(std::unique_ptr<Expr> &);
-  void PostfixIncrement(std::unique_ptr<Expr> &);
-  void PostfixDecrement(std::unique_ptr<Expr> &);
+  bool PostfixExprPrime(std::unique_ptr<Expr> &);
+  bool ArraySubscripting(std::unique_ptr<Expr> &);
+  bool FunctionCall(std::unique_ptr<Expr> &);
+  bool MemberReference(std::unique_ptr<Expr> &);
+  bool PostfixIncrement(std::unique_ptr<Expr> &);
+  bool PostfixDecrement(std::unique_ptr<Expr> &);
   std::vector<std::unique_ptr<Expr>> ArgumentExpressionList();
   //  Expr *CompoundLiterals(Expr *);
   //  Expr *UnaryExpr(Expr *);
@@ -145,17 +145,17 @@ private:
   std::unique_ptr<Expr> PrefixIncrement();
   std::unique_ptr<Expr> PrefixDecrement();
   std::unique_ptr<Expr> Sizeof();
-  void MultiplicativeExprPrime(std::unique_ptr<Expr> &);
-  void AdditiveExprPrime(std::unique_ptr<Expr> &operand1);
-  void ShiftExprPrime(std::unique_ptr<Expr> &operand1);
-  void RelationalExprPrime(std::unique_ptr<Expr> &operand1);
-  void EqualityExprPrime(std::unique_ptr<Expr> &operand1);
-  void ANDExprPrime(std::unique_ptr<Expr> &operand1);
-  void XORExprPrime(std::unique_ptr<Expr> &operand1);
-  void ORExprPrime(std::unique_ptr<Expr> &operand1);
-  void LogicalANDExprPrime(std::unique_ptr<Expr> &operand1);
-  void LogicalORExprPrime(std::unique_ptr<Expr> &operand1);
+  bool AdditiveExprPrime(std::unique_ptr<Expr> &operand1);
+  bool ShiftExprPrime(std::unique_ptr<Expr> &operand1);
+  bool RelationalExprPrime(std::unique_ptr<Expr> &operand1);
+  bool EqualityExprPrime(std::unique_ptr<Expr> &operand1);
+  bool ANDExprPrime(std::unique_ptr<Expr> &operand1);
+  bool XORExprPrime(std::unique_ptr<Expr> &operand1);
+  bool ORExprPrime(std::unique_ptr<Expr> &operand1);
+  bool LogicalANDExprPrime(std::unique_ptr<Expr> &operand1);
+  bool LogicalORExprPrime(std::unique_ptr<Expr> &operand1);
 
+  bool MultiplicativeExprPrime(std::unique_ptr<Expr> &);
   // Declarations
   void StructDeclarationListPrime(Type *);                   // in cc
   void StructDeclaratorListPrime(Type *, StructUnionType *); // in cc

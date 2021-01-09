@@ -37,10 +37,11 @@ bool Parser::ExternalDeclaration() {
  *          declaration-list_{opt} compound-statement
  */
 bool Parser::TryFunctionDeclaration() {
-  auto type_base = std::move(DeclarationSpecifier());
+  auto type_base = DeclarationSpecifier();
   auto delegator = Declarator(type_base);
   /* TODO: declaration_list_{opt} */
   auto compound_statement = CompoundStatement();
+  (void)compound_statement;
 
   return false;
 }

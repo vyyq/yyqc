@@ -38,7 +38,7 @@ private:
   std::string *_file_content_ptr;
   bool OpenFile(const std::string &);
   const std::string &file_content() const { return *_file_content_ptr; }
-  const unsigned int CurrentIndex() { return _position.index(); }
+  unsigned int CurrentIndex() { return _position.index(); }
   const char &file_content(const unsigned int i) const {
     return file_content()[i];
   }
@@ -63,7 +63,7 @@ private:
     return current;
   }
   void ConsumeChars(unsigned int number) {
-    for (int i = 0; i < number; ++i) {
+    for (unsigned i = 0; i < number; ++i) {
       ConsumeChar();
     }
   }
@@ -79,7 +79,8 @@ private:
   }
 
 public:
-  Lexer(const std::string path, bool tokenize = true) : _file_name(path) {
+  Lexer(const std::string path, bool tokenized = true) : _file_name(path) {
+    (void)tokenized;
     if (!OpenFile(_file_name)) {
       // TODO: handle failure of opening file.
     }

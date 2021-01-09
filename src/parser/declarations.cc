@@ -24,10 +24,10 @@
 // }
 
 bool Parser::TryDeclaration() {
-  unsigned screenshot = LexerScreenShot();
+  auto snapshot = LexerSnapShot();
   std::unique_ptr<Type> type_base = DeclarationSpecifier();
   if (type_base == nullptr) {
-    LexerPutBack(screenshot);
+    LexerPutBack(snapshot);
     return false;
   } else {
     bool first_declarator = true;
@@ -109,7 +109,7 @@ std::unique_ptr<Type> Parser::DeclarationSpecifier() {
     // None of them matches, break.
     break;
   }
-  return std::move(type);
+  return type;
 }
 
 // Try to match storage-class-specifier. If succeeds, match, else pass.
@@ -231,7 +231,7 @@ std::unique_ptr<Type> Parser::TryTypeSpecifier(
   default:
     break;
   };
-  return std::move(type);
+  return type;
 }
 
 // Try to match type-specifier. If succeeds, match, else pass.
@@ -411,6 +411,7 @@ std::tuple<Token *, Type *> Parser::SpecifierQualifierList() {
  *  where flags1 must include TS_ATOMIC bit.
  */
 Type *Parser::AtomicTypeSpecifier(Type *type) {
+  (void)type;
   // Match(TOKEN::ATOMIC);
   // type->AddFlag(TS_ATOMIC);
   // Match(TOKEN::LPAR);
@@ -527,11 +528,13 @@ std::tuple<Token *, Type *> Parser::StructOrUnionSpecifier() {
  *                                ${epsilon}
  */
 void Parser::StructDeclarationList(Type *s_type) {
+  (void)s_type;
   // StructDeclaration(s_type);
   // StructDeclarationListPrime(s_type);
 }
 
 void Parser::StructDeclarationListPrime(Type *s_type) {
+  (void)s_type;
   // StructDeclaration(s_type);
   // StructDeclarationListPrime(s_type);
 }
@@ -542,6 +545,7 @@ void Parser::StructDeclarationListPrime(Type *s_type) {
  *          static_assert-declaration
  */
 void Parser::StructDeclaration(Type *s_type) {
+  (void)s_type;
   // auto token = PeekToken();
   // auto tag = token->tag();
   // if (tag == TOKEN::STATIC_ASSERT) {
@@ -587,7 +591,7 @@ std::unique_ptr<Type> Parser::Pointer(const std::unique_ptr<Type> &type_base) {
     TypeQualifierList(pointer_type);
     token = PeekToken();
   }
-  return std::move(pointer_type);
+  return pointer_type;
 }
 
 /**
@@ -614,13 +618,13 @@ void Parser::ParameterTypeList(std::unique_ptr<FunctionType> &function_type) {
  */
 std::vector<std::unique_ptr<Symbol>> Parser::ParameterList() {
   std::vector<std::unique_ptr<Symbol>> parameter_list;
-  parameter_list.push_back(std::move(ParameterDeclaration()));
+  parameter_list.push_back(ParameterDeclaration());
   while (PeekToken()->tag() == TOKEN::COMMA &&
          PeekNextToken()->tag() != TOKEN::ELLIPSIS) {
     Match(TOKEN::COMMA);
-    parameter_list.push_back(std::move(ParameterDeclaration()));
+    parameter_list.push_back(ParameterDeclaration());
   }
-  return std::move(parameter_list);
+  return parameter_list;
 }
 
 /**
@@ -631,7 +635,7 @@ std::vector<std::unique_ptr<Symbol>> Parser::ParameterList() {
  */
 std::unique_ptr<Symbol> Parser::ParameterDeclaration() {
   std::unique_ptr<Type> type_base = DeclarationSpecifier();
-  return std::move(GeneralDeclarator(type_base));
+  return GeneralDeclarator(type_base);
 }
 
 /**
@@ -693,6 +697,7 @@ void Parser::TypeQualifierList(std::unique_ptr<Type> &type) {
  *                      enum identifier
  */
 Type *Parser::EnumSpecifier(Type *node) {
+  (void)node;
   // TODO:
   // Match(TOKEN::ENUM);
   // auto token = PeekToken();

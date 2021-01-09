@@ -157,24 +157,24 @@ class Token {
 private:
   TOKEN _tag = TOKEN::FILE_EOF;
   const Position _position;
-  std::unique_ptr<Value> _value = nullptr;
+  std::unique_ptr<Value> _value;
 
 public:
   Token(TOKEN tag, const Position &position) : _tag(tag), _position(position) {}
   Token(TOKEN tag, const Position &position, std::unique_ptr<Value> &value)
       : _tag(tag), _position(position), _value(std::move(value)) {}
-  const TOKEN tag() { return _tag; }
-  const std::unique_ptr<Value> &value() { return _value; }
+  TOKEN tag() { return _tag; }
+  std::unique_ptr<Value> &value() { return _value; }
   const Position &position() const { return _position; }
   friend std::ostream &operator<<(std::ostream &os, const Token &token) {
     os << "[Token: " << tag_to_string[token._tag] << "] [" << token._position
        << "]";
     return os;
   }
-  const bool IsKeyword() const {
+  bool IsKeyword() const {
     return TOKEN::KEYWORD_START < _tag && _tag < TOKEN::KEYWORD_END;
   }
-  const bool IsConstant() const {
+  bool IsConstant() const {
     return TOKEN::CONSTANT_START < _tag && _tag < TOKEN::CONSTANT_END;
   }
   static std::unordered_map<std::string, TOKEN> string_to_tag;
