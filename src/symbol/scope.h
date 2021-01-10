@@ -4,6 +4,7 @@
 #include "./symbol.h"
 #include <algorithm>
 #include <iostream>
+#include <iterator>
 #include <map>
 #include <memory>
 #include <string>
@@ -14,7 +15,7 @@ public:
   Scope() = default;
 
   explicit Scope(Scope *parent)
-      : _parent(parent), _symbols(std::vector<std::unique_ptr<Symbol>>()) {}
+      : _symbols(std::vector<std::unique_ptr<Symbol>>()), _parent(parent) {}
 
   //  Symbol *Find(const std::string &);åå
 
@@ -30,6 +31,12 @@ public:
 
   void AddSymbol(std::unique_ptr<Symbol> &symbol) {
     _symbols.push_back(std::move(symbol));
+  }
+
+  void AddSymbols(std::vector<std::unique_ptr<Symbol>> &symbols) {
+    _symbols.insert(_symbols.end(),
+                    std::make_move_iterator(symbols.begin()),
+                    std::make_move_iterator(symbols.end()));
   }
 
   Scope *parent() { return _parent; }

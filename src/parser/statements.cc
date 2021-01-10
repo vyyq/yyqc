@@ -1,4 +1,5 @@
 #include "parser.h"
+#include <memory>
 
 // Statements
 
@@ -11,7 +12,7 @@
  *                iteration-statement
  *                jump-statement
  */
-Stmt *Parser::Statement() { return nullptr; }
+std::unique_ptr<Stmt> Parser::Statement() { return nullptr; }
 
 /**
  *  labeled-statement ->
@@ -19,7 +20,7 @@ Stmt *Parser::Statement() { return nullptr; }
  *                case constant-expression : statement
  *                default : statement
  */
-LabeledStmt *Parser::LabeledStatement() {
+std::unique_ptr<LabeledStmt> Parser::LabeledStatement() {
   auto token = PeekToken();
   auto tag = token->tag();
   if (tag == TOKEN::IDENTIFIER) {
@@ -40,7 +41,7 @@ LabeledStmt *Parser::LabeledStatement() {
  * compound-statement ->
  *                { block-item-list_{opt} }
  */
-CompoundStmt *Parser::CompoundStatement() {
+std::unique_ptr<CompoundStmt> Parser::CompoundStatement() {
   Match(TOKEN::LBRACE);
   EnterNewSubScope();
   auto tag = PeekToken()->tag();
@@ -53,14 +54,15 @@ CompoundStmt *Parser::CompoundStatement() {
   }
   ExitCurrentSubScope();
   Match(TOKEN::RBRACE);
-  return compound_stmt;
+  //return compound_stmt;
+  return nullptr;
 }
 
 /**
  *  expression-statement  ->
  *                expression_{opt};
  */
-ExpressionStmt *Parser::ExpressionStatement() { return nullptr; }
+std::unique_ptr<ExpressionStmt> Parser::ExpressionStatement() { return nullptr; }
 
 /**
  *  selection-statement ->
@@ -68,19 +70,19 @@ ExpressionStmt *Parser::ExpressionStatement() { return nullptr; }
  *                if ( expression ) statement else statement
  *                switch ( expression ) statement
  */
-SelectionStmt *Parser::SelectionStatement() {
+std::unique_ptr<SelectionStmt> Parser::SelectionStatement() {
   auto token = PeekToken();
   if (token->tag() == TOKEN::IF) {
     Match(TOKEN::IF);
     Match(TOKEN::LPAR);
     // auto condition = Expression();
     Match(TOKEN::RPAR);
-    Stmt *if_stmt = Statement();
-    Stmt *else_stmt = nullptr;
+    // Stmt *if_stmt = Statement();
+    // Stmt *else_stmt = nullptr;
     token = PeekToken();
     if (token->tag() == TOKEN::ELSE) {
       Match(TOKEN::ELSE);
-      else_stmt = Statement();
+      // else_stmt = Statement();
     }
     // return new IfStmt(condition, if_stmt, else_stmt);
     return nullptr;
@@ -102,7 +104,7 @@ SelectionStmt *Parser::SelectionStatement() {
  *      for ( expression_{opt}; expression_{opt}; expression_{opt} ) statement
  *      for ( declaration expression_{opt} ; expression_{opt} ) statement
  */
-IterationStmt *Parser::IterationStatement() {
+std::unique_ptr<IterationStmt> Parser::IterationStatement() {
   auto tag = PeekToken()->tag();
   if (tag == TOKEN::WHILE) {
     Match(TOKEN::WHILE);
@@ -127,7 +129,8 @@ IterationStmt *Parser::IterationStatement() {
     Match(TOKEN::FOR);
     Match(TOKEN::LPAR);
     // TODO: Complete for loop recognition.
-    return new ForStmt(nullptr, nullptr, nullptr);
+    // return new ForStmt(nullptr, nullptr, nullptr);
+    return nullptr;
   } else {
     Error("iteration-statement should start with while or for.");
     return nullptr;
@@ -141,7 +144,7 @@ IterationStmt *Parser::IterationStatement() {
  *      break ;
  *      return expression_{opt} ;
  */
-JumpStmt *Parser::JumpStatement() {
+std::unique_ptr<JumpStmt> Parser::JumpStatement() {
   auto tag = PeekToken()->tag();
   if (tag == TOKEN::GOTO) {
     Match(TOKEN::GOTO);
@@ -152,10 +155,12 @@ JumpStmt *Parser::JumpStatement() {
     // TODO: Reconsider those nullptr
   } else if (tag == TOKEN::CONTINUE) {
     Match(TOKEN::CONTINUE);
-    return new ContinueStmt(nullptr);
+    // return new ContinueStmt(nullptr);
+    return nullptr;
   } else if (tag == TOKEN::BREAK) {
     Match(TOKEN::BREAK);
-    return new BreakStmt(nullptr);
+    // return new BreakStmt(nullptr);
+    return nullptr;
   } else if (tag == TOKEN::RETURN) {
     // If (expression)
     // auto returned = Expression();

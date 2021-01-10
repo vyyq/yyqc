@@ -23,12 +23,13 @@
 //   return nullptr;
 // }
 
-bool Parser::TryDeclaration() {
+std::vector<std::unique_ptr<Symbol>> Parser::Declaration() {
+  std::vector<std::unique_ptr<Symbol>> declarations;
   auto snapshot = LexerSnapShot();
   std::unique_ptr<Type> type_base = DeclarationSpecifier();
   if (type_base == nullptr) {
     LexerPutBack(snapshot);
-    return false;
+    return {};
   } else {
     bool first_declarator = true;
     do {
@@ -39,22 +40,27 @@ bool Parser::TryDeclaration() {
       }
       auto declarator = Declarator(type_base);
       /* TODO: assign value in declarator. */
+#ifdef DEBUG
+      std::cout << "Prepare to add declarator to vector." << std::endl;
+#endif
       std::unique_ptr<Symbol> symbol = std::move(declarator);
-
+      declarations.push_back(std::move(symbol));
 #ifdef DEBUG
       print_line();
-      std::cout << "Symbol added: " << *symbol << std::endl;
-      std::cout << *(symbol->type());
+      auto &last_element = declarations.back();
+      std::cout << "Symbol added: " << *last_element << std::endl;
+      std::cout << *(last_element->type());
       print_line();
 #endif // DEBUG
 
-      _current_scope->AddSymbol(symbol);
+      // _current_scope->AddSymbol(symbol);
     } while (PeekToken()->tag() == TOKEN::COMMA);
     if (PeekToken()->tag() == TOKEN::SEMI) {
       Match(TOKEN::SEMI);
-      return true;
+      return declarations;
     } else {
-      return false;
+      LexerPutBack(snapshot);
+      return {};
     }
   }
 }

@@ -1,5 +1,6 @@
 #include "parser.h"
 #include <iostream>
+#include <cassert>
 
 // External Definitions
 
@@ -22,10 +23,12 @@ bool Parser::TranslationUnit() {
  *      declaration
  */
 bool Parser::ExternalDeclaration() {
-  if (TryDeclaration()) {
+  auto declarations = Declaration();
+  if (declarations.size() >= 1) {
+    _current_scope->AddSymbols(declarations);
     return true;
   }
-  if (TryFunctionDeclaration()) {
+  if (FunctionDeclaration()) {
     return true;
   }
   return false;
@@ -36,7 +39,7 @@ bool Parser::ExternalDeclaration() {
  *      declaration-specifier declarator
  *          declaration-list_{opt} compound-statement
  */
-bool Parser::TryFunctionDeclaration() {
+bool Parser::FunctionDeclaration() {
   auto type_base = DeclarationSpecifier();
   auto delegator = Declarator(type_base);
   /* TODO: declaration_list_{opt} */

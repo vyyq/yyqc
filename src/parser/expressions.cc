@@ -18,6 +18,9 @@
  *                        | generic-selection
  */
 std::unique_ptr<Expr> Parser::PrimaryExpression() {
+#ifdef DEBUG
+  std::cout << ">>> Primary Expression" << std::endl;
+#endif
   auto token = PeekToken();
   auto tag = token->tag();
   if (tag == TOKEN::IDENTIFIER) {
@@ -45,7 +48,15 @@ std::unique_ptr<Expr> Parser::PrimaryExpression() {
 }
 
 std::unique_ptr<Expr> Parser::Expression() {
+#ifdef DEBUG
+  std::cout << ">>> Expression" << std::endl;
+#endif
+  auto snapshot = LexerSnapShot();
   auto expr = AssignmentExpr();
+  if (!expr) {
+    LexerPutBack(snapshot);
+    return nullptr;
+  }
   return expr;
   // TODO: expression, assignment-expression
 }
@@ -67,6 +78,9 @@ std::unique_ptr<Expr> Parser::Expression() {
  *    | $epsilon$
  */
 std::unique_ptr<Expr> Parser::PostfixExpr() {
+#ifdef DEBUG
+  std::cout << ">>> Postfix Expression" << std::endl;
+#endif
   auto expr = PrimaryExpression();
   auto postfix_expr_success = PostfixExprPrime(expr);
   if (postfix_expr_success) {
@@ -79,6 +93,9 @@ std::unique_ptr<Expr> Parser::PostfixExpr() {
 }
 
 bool Parser::PostfixExprPrime(std::unique_ptr<Expr> &expr) {
+#ifdef DEBUG
+  std::cout << ">>> Postfix Expression Prime" << std::endl;
+#endif
   auto snapshot = LexerSnapShot();
   auto token = PeekToken();
   bool scan_success = true;
@@ -116,6 +133,9 @@ bool Parser::PostfixExprPrime(std::unique_ptr<Expr> &expr) {
  * *(ptr + offset)
  */
 bool Parser::ArraySubscripting(std::unique_ptr<Expr> &expr) {
+#ifdef DEBUG
+  std::cout << "Array Subscripting" << std::endl;
+#endif
   auto snapshot = LexerSnapShot();
   auto token = PeekToken();
   Match(TOKEN::LSQUBRKT);
@@ -136,6 +156,9 @@ bool Parser::ArraySubscripting(std::unique_ptr<Expr> &expr) {
 }
 
 bool Parser::FunctionCall(std::unique_ptr<Expr> &designator) {
+#ifdef DEBUG
+  std::cout << ">>> Function Call" << std::endl;
+#endif
   auto snapshot = LexerSnapShot();
   auto token = PeekToken();
   Match(TOKEN::LPAR);
@@ -162,6 +185,10 @@ std::vector<std::unique_ptr<Expr>> Parser::ArgumentExpressionList() {
 }
 
 bool Parser::MemberReference(std::unique_ptr<Expr> &ptr) {
+#ifdef DEBUG
+  std::cout << ">>> Member Reference" << std::endl;
+#endif
+
   OP op;
   if (PeekToken(TOKEN::PTR_MEM_REF)) {
     Match(TOKEN::PTR_MEM_REF);
@@ -182,6 +209,10 @@ bool Parser::MemberReference(std::unique_ptr<Expr> &ptr) {
 }
 
 bool Parser::PostfixIncrement(std::unique_ptr<Expr> &operand) {
+#ifdef DEBUG
+  std::cout << ">>> Postfix Increment" << std::endl;
+#endif
+
   auto token = Match(TOKEN::INCREMENT);
   auto expr =
       std::make_unique<UnaryOperatorExpr>(OP::POSTFIX_INC, operand, token);
@@ -203,6 +234,9 @@ bool Parser::PostfixDecrement(std::unique_ptr<Expr> &operand) {
 // }
 
 std::unique_ptr<Expr> Parser::UnaryExpr() {
+#ifdef DEBUG
+  std::cout << ">>> Unary Expression" << std::endl;
+#endif
   auto snapshot = LexerSnapShot();
   auto token = PeekToken();
   auto tag = token->tag();
@@ -243,6 +277,9 @@ std::unique_ptr<Expr> Parser::UnaryExpr() {
 }
 
 std::unique_ptr<Expr> Parser::PrefixIncrement() {
+#ifdef DEBUG
+  std::cout << ">>> Prefix Increment" << std::endl;
+#endif
   auto snapshot = LexerSnapShot();
   auto token = PeekToken();
   Match(TOKEN::INCREMENT);
@@ -257,6 +294,9 @@ std::unique_ptr<Expr> Parser::PrefixIncrement() {
 }
 
 std::unique_ptr<Expr> Parser::PrefixDecrement() {
+#ifdef DEBUG
+  std::cout << ">>> Prefix Decrement" << std::endl;
+#endif
   auto snapshot = LexerSnapShot();
   auto token = PeekToken();
   Match(TOKEN::DECREMENT);
@@ -271,6 +311,9 @@ std::unique_ptr<Expr> Parser::PrefixDecrement() {
 }
 
 std::unique_ptr<Expr> Parser::Sizeof() {
+#ifdef DEBUG
+  std::cout << ">>> sizeof" << std::endl;
+#endif
   auto snapshot = LexerSnapShot();
   auto token = Match(TOKEN::SIZEOF);
   auto expr = UnaryExpr();
@@ -289,6 +332,9 @@ std::unique_ptr<Expr> Parser::Sizeof() {
 // Token *Parser::UnaryOperator() { return ConsumeToken(); }
 
 std::unique_ptr<Expr> Parser::CastExpr() {
+#ifdef DEBUG
+  std::cout << ">>> Cast Expression" << std::endl;
+#endif
   if (PeekToken(TOKEN::LPAR) && false) {
     // TODO: Handle ( type-name ) cast-expresssion
     return nullptr;
@@ -313,6 +359,9 @@ std::unique_ptr<Expr> Parser::CastExpr() {
  *                           | $\epsilon$
  */
 std::unique_ptr<Expr> Parser::MultiplicativeExpr() {
+#ifdef DEBUG
+  std::cout << ">>> Multiplicative Expression" << std::endl;
+#endif
   auto snapshot = LexerSnapShot();
   auto expr1 = CastExpr();
   if (MultiplicativeExprPrime(expr1)) {
@@ -324,6 +373,9 @@ std::unique_ptr<Expr> Parser::MultiplicativeExpr() {
 }
 
 bool Parser::MultiplicativeExprPrime(std::unique_ptr<Expr> &operand1) {
+#ifdef DEBUG
+  std::cout << ">>> Multiplicative Expression Prime" << std::endl;
+#endif
   auto snapshot = LexerSnapShot();
   auto token = PeekToken();
   auto tag = token->tag();
@@ -377,6 +429,9 @@ bool Parser::MultiplicativeExprPrime(std::unique_ptr<Expr> &operand1) {
  *                           | $\epsilon$
  */
 std::unique_ptr<Expr> Parser::AdditiveExpr() {
+#ifdef DEBUG
+  std::cout << ">>> Additive Expression" << std::endl;
+#endif
   auto snapshot = LexerSnapShot();
   auto operand1 = MultiplicativeExpr();
   if (!operand1) {
@@ -392,6 +447,9 @@ std::unique_ptr<Expr> Parser::AdditiveExpr() {
 }
 
 bool Parser::AdditiveExprPrime(std::unique_ptr<Expr> &operand1) {
+#ifdef DEBUG
+  std::cout << ">>> Additive Expression Prime" << std::endl;
+#endif
   auto snapshot = LexerSnapShot();
   auto token = PeekToken();
   auto tag = token->tag();
@@ -434,6 +492,9 @@ bool Parser::AdditiveExprPrime(std::unique_ptr<Expr> &operand1) {
  *                    | ${epsilon}
  */
 std::unique_ptr<Expr> Parser::ShiftExpr() {
+#ifdef DEBUG
+  std::cout << ">>> Shift Expression" << std::endl;
+#endif
   auto snapshot = LexerSnapShot();
   auto operand1 = AdditiveExpr();
   if (!operand1) {
@@ -449,6 +510,9 @@ std::unique_ptr<Expr> Parser::ShiftExpr() {
 }
 
 bool Parser::ShiftExprPrime(std::unique_ptr<Expr> &operand1) {
+#ifdef DEBUG
+  std::cout << ">>> Shift Expression Prime" << std::endl;
+#endif
   auto snapshot = LexerSnapShot();
   auto token = PeekToken();
   auto tag = token->tag();
@@ -495,6 +559,9 @@ bool Parser::ShiftExprPrime(std::unique_ptr<Expr> &operand1) {
  *                          | ${epsilon}
  */
 std::unique_ptr<Expr> Parser::RelationalExpr() {
+#ifdef DEBUG
+  std::cout << ">>> Relational Expression" << std::endl;
+#endif
   auto snapshot = LexerSnapShot();
   auto operand1 = ShiftExpr();
   if (!operand1) {
@@ -568,6 +635,9 @@ bool Parser::RelationalExprPrime(std::unique_ptr<Expr> &operand1) {
  *                          | ${epsilon}
  */
 std::unique_ptr<Expr> Parser::EqualityExpr() {
+#ifdef DEBUG
+  std::cout << ">>> Equality Expression" << std::endl;
+#endif
   auto operand1 = RelationalExpr();
   if (EqualityExprPrime(operand1)) {
     return operand1;
@@ -577,6 +647,9 @@ std::unique_ptr<Expr> Parser::EqualityExpr() {
 }
 
 bool Parser::EqualityExprPrime(std::unique_ptr<Expr> &operand1) {
+#ifdef DEBUG
+  std::cout << ">>> Equality Expression Prime" << std::endl;
+#endif
   auto snapshot = LexerSnapShot();
   auto token = PeekToken();
   auto tag = token->tag();
@@ -612,6 +685,9 @@ bool Parser::EqualityExprPrime(std::unique_ptr<Expr> &operand1) {
  * which is a left recursive formula and is needed to be re-written.
  */
 std::unique_ptr<Expr> Parser::ANDExpr() {
+#ifdef DEBUG
+  std::cout << ">>> AND Expression" << std::endl;
+#endif
   auto snapshot = LexerSnapShot();
   auto operand1 = EqualityExpr();
   if (!operand1) {
@@ -627,6 +703,9 @@ std::unique_ptr<Expr> Parser::ANDExpr() {
 }
 
 bool Parser::ANDExprPrime(std::unique_ptr<Expr> &operand1) {
+#ifdef DEBUG
+  std::cout << ">>> AND Expression Prime" << std::endl;
+#endif
   auto snapshot = LexerSnapShot();
   auto token = PeekToken();
   auto tag = token->tag();
@@ -657,6 +736,9 @@ bool Parser::ANDExprPrime(std::unique_ptr<Expr> &operand1) {
  *                      | ${epsilon}
  */
 std::unique_ptr<Expr> Parser::XORExpr() {
+#ifdef DEBUG
+  std::cout << ">>> XOR Expression" << std::endl;
+#endif
   auto snapshot = LexerSnapShot();
   auto operand1 = ANDExpr();
   if (!operand1) {
@@ -672,6 +754,9 @@ std::unique_ptr<Expr> Parser::XORExpr() {
 }
 
 bool Parser::XORExprPrime(std::unique_ptr<Expr> &operand1) {
+#ifdef DEBUG
+  std::cout << ">>> XOR Expression Prime" << std::endl;
+#endif
   auto snapshot = LexerSnapShot();
   auto token = PeekToken();
   auto tag = token->tag();
@@ -701,6 +786,9 @@ bool Parser::XORExprPrime(std::unique_ptr<Expr> &operand1) {
  *                  ->  ${epsilon}
  */
 std::unique_ptr<Expr> Parser::ORExpr() {
+#ifdef DEBUG
+  std::cout << ">>> OR Expression" << std::endl;
+#endif
   auto snapshot = LexerSnapShot();
   auto operand1 = XORExpr();
   if (!operand1) {
@@ -716,6 +804,9 @@ std::unique_ptr<Expr> Parser::ORExpr() {
 }
 
 bool Parser::ORExprPrime(std::unique_ptr<Expr> &operand1) {
+#ifdef DEBUG
+  std::cout << ">>> OR Expression Prime" << std::endl;
+#endif
   auto snapshot = LexerSnapShot();
   auto token = PeekToken();
   auto tag = token->tag();
@@ -735,6 +826,9 @@ bool Parser::ORExprPrime(std::unique_ptr<Expr> &operand1) {
 }
 
 std::unique_ptr<Expr> Parser::LogicalANDExpr() {
+#ifdef DEBUG
+  std::cout << ">>> Logical AND Expression" << std::endl;
+#endif
   auto snapshot = LexerSnapShot();
   auto operand1 = ORExpr();
   if (!operand1) {
@@ -750,6 +844,9 @@ std::unique_ptr<Expr> Parser::LogicalANDExpr() {
 }
 
 bool Parser::LogicalANDExprPrime(std::unique_ptr<Expr> &operand1) {
+#ifdef DEBUG
+  std::cout << ">>> Logical AND Expression Prime" << std::endl;
+#endif
   auto snapshot = LexerSnapShot();
   auto token = PeekToken();
   auto tag = token->tag();
@@ -769,6 +866,9 @@ bool Parser::LogicalANDExprPrime(std::unique_ptr<Expr> &operand1) {
 }
 
 std::unique_ptr<Expr> Parser::LogicalORExpr() {
+#ifdef DEBUG
+  std::cout << ">>> Logical OR Expression" << std::endl;
+#endif
   auto snapshot = LexerSnapShot();
   auto operand1 = LogicalANDExpr();
   if (!operand1) {
@@ -784,6 +884,9 @@ std::unique_ptr<Expr> Parser::LogicalORExpr() {
 }
 
 bool Parser::LogicalORExprPrime(std::unique_ptr<Expr> &operand1) {
+#ifdef DEBUG
+  std::cout << ">>> Logical OR Expression Prime" << std::endl;
+#endif
   auto snapshot = LexerSnapShot();
   auto token = PeekToken();
   auto tag = token->tag();
@@ -803,6 +906,9 @@ bool Parser::LogicalORExprPrime(std::unique_ptr<Expr> &operand1) {
 }
 
 std::unique_ptr<Expr> Parser::ConditionalExpr() {
+#ifdef DEBUG
+  std::cout << ">>> Conditianal Expression" << std::endl;
+#endif
   auto snapshot = LexerSnapShot();
   auto cond = LogicalORExpr();
   auto token = PeekToken();
@@ -829,6 +935,9 @@ std::unique_ptr<Expr> Parser::ConditionalExpr() {
 }
 
 std::unique_ptr<Expr> Parser::AssignmentExpr() {
+#ifdef DEBUG
+  std::cout << ">>> Assignment Expression" << std::endl;
+#endif
   auto conditional_expr = ConditionalExpr();
   if (conditional_expr) {
     return conditional_expr;

@@ -79,7 +79,7 @@ public:
   std::unique_ptr<Expr> ConstantExpr();
 
   // Declarators
-  bool TryDeclaration();
+  std::vector<std::unique_ptr<Symbol>> Declaration();
   // Type *TypeName();                    // 6.7.7         // in cc
   uint32_t TryStorageClassSpecifier(); // in cc
   std::unique_ptr<Type> TryTypeSpecifier(uint32_t, uint32_t &, uint32_t,
@@ -115,20 +115,20 @@ public:
   //  void TypedefName();
 
   // Statements
-  Stmt *Statement();
-  LabeledStmt *LabeledStatement();
-  CompoundStmt *CompoundStatement();
-  ExpressionStmt *ExpressionStatement();
-  SelectionStmt *SelectionStatement();
-  IterationStmt *IterationStatement();
-  JumpStmt *JumpStatement();
+  std::unique_ptr<Stmt> Statement();
+  std::unique_ptr<LabeledStmt> LabeledStatement();
+  std::unique_ptr<CompoundStmt> CompoundStatement();
+  std::unique_ptr<ExpressionStmt> ExpressionStatement();
+  std::unique_ptr<SelectionStmt> SelectionStatement();
+  std::unique_ptr<IterationStmt> IterationStatement();
+  std::unique_ptr<JumpStmt> JumpStatement();
   std::list<ASTNode *> BlockItemList();
   ASTNode *BlockItem();
 
   // External Definitions
   bool TranslationUnit();
   bool ExternalDeclaration();
-  bool TryFunctionDeclaration();
+  bool FunctionDeclaration();
   void DeclarationList();
 
 private:
