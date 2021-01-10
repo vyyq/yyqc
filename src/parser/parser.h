@@ -15,6 +15,7 @@
 #include <set>
 #include <string>
 #include <tuple>
+#include <utility>
 
 #define DEBUG
 
@@ -118,12 +119,11 @@ public:
   std::unique_ptr<Stmt> Statement();
   std::unique_ptr<LabeledStmt> LabeledStatement();
   std::unique_ptr<CompoundStmt> CompoundStatement();
-  std::unique_ptr<ExpressionStmt> ExpressionStatement();
+  std::pair<bool, std::unique_ptr<ExpressionStmt>> ExpressionStatement();
   std::unique_ptr<SelectionStmt> SelectionStatement();
   std::unique_ptr<IterationStmt> IterationStatement();
   std::unique_ptr<JumpStmt> JumpStatement();
-  std::list<ASTNode *> BlockItemList();
-  ASTNode *BlockItem();
+  std::pair<bool, std::vector<std::unique_ptr<Stmt>>> BlockItemList();
 
   // External Definitions
   bool TranslationUnit();

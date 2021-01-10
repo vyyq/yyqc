@@ -1,5 +1,6 @@
 #include "parser.h"
 #include <memory>
+#include <utility>
 
 // Statements
 
@@ -12,7 +13,58 @@
  *                iteration-statement
  *                jump-statement
  */
-std::unique_ptr<Stmt> Parser::Statement() { return nullptr; }
+std::unique_ptr<Stmt> Parser::Statement() {
+  auto snapshot = LexerSnapShot();
+  auto token = PeekToken();
+  auto tag = token->tag();
+  if (tag == TOKEN::WHILE || tag == TOKEN::DO || tag == TOKEN::FOR) {
+    auto iteration_stmt = IterationStatement();
+    if (!iteration_stmt) {
+      LexerPutBack(snapshot);
+      return nullptr;
+    }
+    return iteration_stmt;
+  } else if (tag == TOKEN::GOTO || tag == TOKEN::CONTINUE ||
+             tag == TOKEN::BREAK || tag == TOKEN::RETURN) {
+    auto jump_stmt = JumpStatement();
+    if (!jump_stmt) {
+      LexerPutBack(snapshot);
+      return nullptr;
+    }
+    return jump_stmt;
+  } else if (tag == TOKEN::IF || tag == TOKEN::SWITCH) {
+    auto selection_stmt = SelectionStatement();
+    if (!selection_stmt) {
+      LexerPutBack(snapshot);
+      return nullptr;
+    }
+    return selection_stmt;
+  } else if (tag == TOKEN::LBRACE) {
+    auto compound_stmt = CompoundStatement();
+    if (!compound_stmt) {
+      LexerPutBack(snapshot);
+      return nullptr;
+    }
+    return compound_stmt;
+  } else if (tag == TOKEN::CASE || tag == TOKEN::DEFAULT ||
+             (tag == TOKEN::IDENTIFIER &&
+              PeekNextToken()->tag() == TOKEN::COLON)) {
+    auto labeled_stmt = LabeledStatement();
+    if (!labeled_stmt) {
+      LexerPutBack(snapshot);
+      return nullptr;
+    }
+    return labeled_stmt;
+  } else {
+    auto expression_pair = ExpressionStatement();
+    if (!expression_pair.first) {
+      LexerPutBack(snapshot);
+      return nullptr;
+    }
+    auto expression_stmt = std::move(expression_pair.second);
+    return expression_stmt;
+  }
+}
 
 /**
  *  labeled-statement ->
@@ -21,6 +73,7 @@ std::unique_ptr<Stmt> Parser::Statement() { return nullptr; }
  *                default : statement
  */
 std::unique_ptr<LabeledStmt> Parser::LabeledStatement() {
+  // TODO
   auto token = PeekToken();
   auto tag = token->tag();
   if (tag == TOKEN::IDENTIFIER) {
@@ -29,7 +82,6 @@ std::unique_ptr<LabeledStmt> Parser::LabeledStatement() {
   } else if (tag == TOKEN::CASE) {
     Match(TOKEN::CASE);
     Match(TOKEN::COLON);
-
   } else {
     Match(TOKEN::DEFAULT);
     Match(TOKEN::COLON);
@@ -42,27 +94,47 @@ std::unique_ptr<LabeledStmt> Parser::LabeledStatement() {
  *                { block-item-list_{opt} }
  */
 std::unique_ptr<CompoundStmt> Parser::CompoundStatement() {
+  auto snapshot = LexerSnapShot();
   Match(TOKEN::LBRACE);
   EnterNewSubScope();
   auto tag = PeekToken()->tag();
-  CompoundStmt *compound_stmt = nullptr;
+  auto compound_stmt = std::make_unique<CompoundStmt>();
+  compound_stmt->set_scope(_current_scope);
   if (tag != TOKEN::RBRACE) {
-    std::list<ASTNode *> block_item_list = BlockItemList();
-    compound_stmt = new CompoundStmt(block_item_list);
-  } else {
-    compound_stmt = new CompoundStmt();
+    auto pair = BlockItemList();
+    if (pair.first) {
+      compound_stmt->AddStmts(pair.second);
+    } else {
+      LexerPutBack(snapshot);
+      return nullptr;
+    }
   }
   ExitCurrentSubScope();
   Match(TOKEN::RBRACE);
-  //return compound_stmt;
-  return nullptr;
+  return compound_stmt;
 }
 
 /**
  *  expression-statement  ->
  *                expression_{opt};
  */
-std::unique_ptr<ExpressionStmt> Parser::ExpressionStatement() { return nullptr; }
+std::pair<bool, std::unique_ptr<ExpressionStmt>> Parser::ExpressionStatement() {
+  auto snapshot = LexerSnapShot();
+  auto token = PeekToken();
+  auto tag = token->tag();
+  if (tag == TOKEN::SEMI) {
+    Match(TOKEN::SEMI);
+    return std::make_pair(true, nullptr);
+  } else {
+    auto expression = Expression();
+    if (!expression) {
+      LexerPutBack(snapshot);
+      return std::make_pair(false, nullptr);
+    }
+    auto expression_stmt = std::make_unique<ExpressionStmt>(expression);
+    return std::make_pair(true, std::move(expression_stmt));
+  }
+}
 
 /**
  *  selection-statement ->
@@ -75,24 +147,23 @@ std::unique_ptr<SelectionStmt> Parser::SelectionStatement() {
   if (token->tag() == TOKEN::IF) {
     Match(TOKEN::IF);
     Match(TOKEN::LPAR);
-    // auto condition = Expression();
+    auto condition = Expression();
     Match(TOKEN::RPAR);
-    // Stmt *if_stmt = Statement();
-    // Stmt *else_stmt = nullptr;
+    auto true_stmt = Statement();
+    std::unique_ptr<Stmt> false_stmt = nullptr;
     token = PeekToken();
     if (token->tag() == TOKEN::ELSE) {
       Match(TOKEN::ELSE);
-      // else_stmt = Statement();
+      false_stmt = Statement();
     }
-    // return new IfStmt(condition, if_stmt, else_stmt);
-    return nullptr;
+    return std::make_unique<IfStmt>(condition, true_stmt, false_stmt);
   } else {
-    Match(TOKEN::SWITCH);
-    Match(TOKEN::LPAR);
-    // auto choices = Expression();
-    Match(TOKEN::RPAR);
-    auto stmt = Statement();
-    // return new SwitchStmt(choices);
+    // Match(TOKEN::SWITCH);
+    // Match(TOKEN::LPAR);
+    // Match(TOKEN::RPAR);
+    // auto stmt = Statement();
+    // TODO: support switch statement.
+    std::cerr << "switch statement is not supported yet." << std::endl;
     return nullptr;
   }
 }
@@ -109,27 +180,27 @@ std::unique_ptr<IterationStmt> Parser::IterationStatement() {
   if (tag == TOKEN::WHILE) {
     Match(TOKEN::WHILE);
     Match(TOKEN::LPAR);
-    // auto condition = Expression();
+    auto condition = Expression();
     Match(TOKEN::RPAR);
     auto body = Statement();
     // "next field" in while should be evaluate later.
     // return new WhileStmt(condition, body, nullptr);
-    return nullptr;
+    auto while_stmt = std::make_unique<WhileStmt>(condition, body);
+    return while_stmt;
   } else if (tag == TOKEN::DO) {
     Match(TOKEN::DO);
     auto body = Statement();
     Match(TOKEN::WHILE);
     Match(TOKEN::LPAR);
-    // auto condition = Expression();
+    auto condition = Expression();
     Match(TOKEN::RPAR);
     Match(TOKEN::SEMI);
-    // return new DoWhileStmt(condition, body, nullptr);
-    return nullptr;
+    auto do_while_stmt = std::make_unique<DoWhileStmt>(condition, body);
+    return do_while_stmt;
   } else if (tag == TOKEN::FOR) {
     Match(TOKEN::FOR);
     Match(TOKEN::LPAR);
     // TODO: Complete for loop recognition.
-    // return new ForStmt(nullptr, nullptr, nullptr);
     return nullptr;
   } else {
     Error("iteration-statement should start with while or for.");
@@ -145,6 +216,7 @@ std::unique_ptr<IterationStmt> Parser::IterationStatement() {
  *      return expression_{opt} ;
  */
 std::unique_ptr<JumpStmt> Parser::JumpStatement() {
+  // TODO
   auto tag = PeekToken()->tag();
   if (tag == TOKEN::GOTO) {
     Match(TOKEN::GOTO);
@@ -177,19 +249,24 @@ std::unique_ptr<JumpStmt> Parser::JumpStatement() {
  *      block-item
  *      block-item-list block-item
  */
-std::list<ASTNode *> Parser::BlockItemList() {
-  std::list<ASTNode *> block_item_list;
+std::pair<bool, std::vector<std::unique_ptr<Stmt>>> Parser::BlockItemList() {
+  auto snapshot = LexerSnapShot();
+  std::vector<std::unique_ptr<Stmt>> stmt_items;
   auto token = PeekToken();
   do {
-    auto block_item = BlockItem();
-    block_item_list.push_back(block_item);
+    auto declaration = Declaration();
+    if (declaration.size() == 0) {
+      auto statement = Statement();
+      if (statement) {
+        stmt_items.push_back(std::move(statement));
+      } else {
+        LexerPutBack(snapshot);
+        return std::make_pair(false, std::vector<std::unique_ptr<Stmt>>());
+      }
+    } else {
+      _current_scope->AddSymbols(declaration);
+    }
   } while (token->tag() != TOKEN::RBRACE);
-  return block_item_list;
+  return std::make_pair(true, std::move(stmt_items));
 }
 
-/**
- *  block-item  ->
- *                  declaration
- *                  statement
- */
-ASTNode *Parser::BlockItem() { return nullptr; }
