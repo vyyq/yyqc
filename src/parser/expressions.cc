@@ -25,24 +25,39 @@ std::unique_ptr<Expr> Parser::PrimaryExpression() {
   auto tag = token->tag();
   if (tag == TOKEN::IDENTIFIER) {
     Match(TOKEN::IDENTIFIER);
+#ifdef DEBUG
+    std::cout << "<<< Primary Expression" << std::endl;
+#endif
     return std::make_unique<Identifier>(token);
   } else if (tag == TOKEN::INTEGER_CONTANT || tag == TOKEN::FLOATING_CONSTANT ||
              tag == TOKEN::ENUMERATION_CONSTANT ||
              tag == TOKEN::CHARACTER_CONSTANT) {
     ConsumeToken();
+#ifdef DEBUG
+    std::cout << "<<< Primary Expression" << std::endl;
+#endif
     return std::make_unique<Constant>(token);
   } else if (tag == TOKEN::STRING_LITERAL) {
     Match(TOKEN::STRING_LITERAL);
+#ifdef DEBUG
+    std::cout << "<<< Primary Expression" << std::endl;
+#endif
     return std::make_unique<Constant>(token);
   } else if (tag == TOKEN::LPAR) {
     Match(TOKEN::LPAR);
     auto expr = Expression();
     Match(TOKEN::RPAR);
+#ifdef DEBUG
+    std::cout << "<<< Primary Expression" << std::endl;
+#endif
     return expr;
   } else if (tag == TOKEN::GENERIC) {
     Error("Generic-selection is not supported now.");
     return nullptr;
   } else {
+#ifdef DEBUG
+    std::cout << "!!! Primary Expression failed!" << std::endl;
+#endif
     return nullptr;
   }
 }
@@ -54,9 +69,15 @@ std::unique_ptr<Expr> Parser::Expression() {
   auto snapshot = LexerSnapShot();
   auto expr = AssignmentExpr();
   if (!expr) {
+#ifdef DEBUG
+    std::cout << "!!! Expression failed!" << std::endl;
+#endif
     LexerPutBack(snapshot);
     return nullptr;
   }
+#ifdef DEBUG
+  std::cout << "<<< Expression" << std::endl;
+#endif
   return expr;
   // TODO: expression, assignment-expression
 }
@@ -84,8 +105,14 @@ std::unique_ptr<Expr> Parser::PostfixExpr() {
   auto expr = PrimaryExpression();
   auto postfix_expr_success = PostfixExprPrime(expr);
   if (postfix_expr_success) {
+#ifdef DEBUG
+    std::cout << "<<< Postfix Expression" << std::endl;
+#endif
     return expr;
   } else {
+#ifdef DEBUG
+    std::cout << "!!! Postfix Expression failed!" << std::endl;
+#endif
     return nullptr;
   }
   // TODO: support compound literal feature.
@@ -120,8 +147,14 @@ bool Parser::PostfixExprPrime(std::unique_ptr<Expr> &expr) {
     return scan_success;
   }
   if (scan_success) {
+#ifdef DEBUG
+    std::cout << "<<< Postfix Expression Prime" << std::endl;
+#endif
     return PostfixExprPrime(expr);
   } else {
+#ifdef DEBUG
+    std::cout << "!!! Postfix Expression Prime failed!" << std::endl;
+#endif
     LexerPutBack(snapshot);
     return false;
   }
@@ -134,13 +167,16 @@ bool Parser::PostfixExprPrime(std::unique_ptr<Expr> &expr) {
  */
 bool Parser::ArraySubscripting(std::unique_ptr<Expr> &expr) {
 #ifdef DEBUG
-  std::cout << "Array Subscripting" << std::endl;
+  std::cout << ">>> Array Subscripting" << std::endl;
 #endif
   auto snapshot = LexerSnapShot();
   auto token = PeekToken();
   Match(TOKEN::LSQUBRKT);
   auto offset = Expression();
   if (!offset) {
+#ifdef DEBUG
+    std::cout << "!!! Array Subscripting failed!" << std::endl;
+#endif
     LexerPutBack(snapshot);
     return false;
   }
@@ -152,6 +188,9 @@ bool Parser::ArraySubscripting(std::unique_ptr<Expr> &expr) {
   auto dereference =
       std::make_unique<UnaryOperatorExpr>(OP::DEREFERENCE, point_to, token);
   expr = std::move(dereference);
+#ifdef DEBUG
+  std::cout << "<<< Array Subscripting" << std::endl;
+#endif
   return true;
 }
 
@@ -169,6 +208,9 @@ bool Parser::FunctionCall(std::unique_ptr<Expr> &designator) {
   } else {
     auto argument_expression_list = ArgumentExpressionList();
     if (argument_expression_list.size() == 0) {
+#ifdef DEBUG
+      std::cout << "!!! Function Call failed!" << std::endl;
+#endif
       LexerPutBack(snapshot);
       return false;
     }
@@ -176,6 +218,9 @@ bool Parser::FunctionCall(std::unique_ptr<Expr> &designator) {
     Match(TOKEN::RPAR);
     designator = std::move(function_call);
   }
+#ifdef DEBUG
+  std::cout << "<<< Function Call" << std::endl;
+#endif
   return true;
 }
 
@@ -938,44 +983,67 @@ std::unique_ptr<Expr> Parser::AssignmentExpr() {
 #ifdef DEBUG
   std::cout << ">>> Assignment Expression" << std::endl;
 #endif
-  auto conditional_expr = ConditionalExpr();
-  if (conditional_expr) {
-    return conditional_expr;
-  } else {
-    // assignment-expression
-    //  -> unary-expression assignment-operator assignment-expression
-    auto lhs = UnaryExpr();
-    auto token = PeekToken();
-    auto tag = token->tag();
-    OP op;
-    if (tag == TOKEN::ASSIGN) {
-      op = OP::ASSIGN;
-    } else if (tag == TOKEN::MUL_ASSIGN) {
-      op = OP::MULTIPLY_ASSIGN;
-    } else if (tag == TOKEN::DIV_ASSIGN) {
-      op = OP::DIVIDE_ASSIGN;
-    } else if (tag == TOKEN::MOD_ASSIGN) {
-      op = OP::MOD_ASSIGN;
-    } else if (tag == TOKEN::ADD_ASSIGN) {
-      op = OP::PLUS_ASSIGN;
-    } else if (tag == TOKEN::SUB_ASSIGN) {
-      op = OP::MINUS_ASSIGN;
-    } else if (tag == TOKEN::LEFT_ASSIGN) {
-      op = OP::LEFT_SHIFT_ASSIGN;
-    } else if (tag == TOKEN::RIGHT_ASSIGN) {
-      op = OP::RIGHT_SHIFT_ASSIGN;
-    } else if (tag == TOKEN::AND_ASSIGN) {
-      op = OP::AND_ASSIGN;
-    } else if (tag == TOKEN::NOT_ASSIGN) {
-      op = OP::NOT_ASSIGN;
-    } else if (tag == TOKEN::OR_ASSIGN) {
-      op = OP::OR_ASSIGN;
+  auto snapshot = LexerSnapShot();
+  // assignment-expression
+  //  -> unary-expression assignment-operator assignment-expression
+  auto lhs = UnaryExpr();
+  if (!lhs) {
+    LexerPutBack(snapshot);
+    auto conditional_expr = ConditionalExpr();
+    if (!conditional_expr) {
+      LexerPutBack(snapshot);
+      return nullptr;
+    } else {
+      return conditional_expr;
     }
-    ConsumeToken();
-    auto rhs = AssignmentExpr();
-    auto expr = std::make_unique<BinaryOperatorExpr>(op, lhs, rhs, token);
-    return expr;
   }
+  auto token = PeekToken();
+  auto tag = token->tag();
+  OP op;
+  if (tag == TOKEN::ASSIGN) {
+    op = OP::ASSIGN;
+  } else if (tag == TOKEN::MUL_ASSIGN) {
+    op = OP::MULTIPLY_ASSIGN;
+  } else if (tag == TOKEN::DIV_ASSIGN) {
+    op = OP::DIVIDE_ASSIGN;
+  } else if (tag == TOKEN::MOD_ASSIGN) {
+    op = OP::MOD_ASSIGN;
+  } else if (tag == TOKEN::ADD_ASSIGN) {
+    op = OP::PLUS_ASSIGN;
+  } else if (tag == TOKEN::SUB_ASSIGN) {
+    op = OP::MINUS_ASSIGN;
+  } else if (tag == TOKEN::LEFT_ASSIGN) {
+    op = OP::LEFT_SHIFT_ASSIGN;
+  } else if (tag == TOKEN::RIGHT_ASSIGN) {
+    op = OP::RIGHT_SHIFT_ASSIGN;
+  } else if (tag == TOKEN::AND_ASSIGN) {
+    op = OP::AND_ASSIGN;
+  } else if (tag == TOKEN::NOT_ASSIGN) {
+    op = OP::NOT_ASSIGN;
+  } else if (tag == TOKEN::OR_ASSIGN) {
+    op = OP::OR_ASSIGN;
+  } else {
+    auto conditional_expr = ConditionalExpr();
+    if (!conditional_expr) {
+      LexerPutBack(snapshot);
+      return nullptr;
+    } else {
+      return conditional_expr;
+    }
+  }
+  ConsumeToken();
+  auto rhs = AssignmentExpr();
+  if (!rhs) {
+    auto conditional_expr = ConditionalExpr();
+    if (!conditional_expr) {
+      LexerPutBack(snapshot);
+      return nullptr;
+    } else {
+      return conditional_expr;
+    }
+  }
+  auto expr = std::make_unique<BinaryOperatorExpr>(op, lhs, rhs, token);
+  return expr;
 }
 
 std::unique_ptr<Expr> Parser::ConstantExpr() { return ConditionalExpr(); }

@@ -132,6 +132,7 @@ std::pair<bool, std::unique_ptr<ExpressionStmt>> Parser::ExpressionStatement() {
       return std::make_pair(false, nullptr);
     }
     auto expression_stmt = std::make_unique<ExpressionStmt>(expression);
+    Match(TOKEN::SEMI);
     return std::make_pair(true, std::move(expression_stmt));
   }
 }
@@ -253,7 +254,10 @@ std::pair<bool, std::vector<std::unique_ptr<Stmt>>> Parser::BlockItemList() {
   auto snapshot = LexerSnapShot();
   std::vector<std::unique_ptr<Stmt>> stmt_items;
   auto token = PeekToken();
-  do {
+  while (PeekToken()->tag() != TOKEN::RBRACE) {
+#ifdef DEBUG
+    std::cout << "block-item-list: while again." << std::endl;
+#endif
     auto declaration = Declaration();
     if (declaration.size() == 0) {
       auto statement = Statement();
@@ -266,7 +270,7 @@ std::pair<bool, std::vector<std::unique_ptr<Stmt>>> Parser::BlockItemList() {
     } else {
       _current_scope->AddSymbols(declaration);
     }
-  } while (token->tag() != TOKEN::RBRACE);
+  }
   return std::make_pair(true, std::move(stmt_items));
 }
 

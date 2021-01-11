@@ -104,4 +104,6 @@ std::unordered_map<TOKEN, std::string> Token::tag_to_string{
     {TOKEN::COLON, "COLON"},
     {TOKEN::SEMI, "SEMICOLON"},
     {TOKEN::STAR, "STAR"},
+    {TOKEN::EQ, "=="},
+    {TOKEN::ASSIGN, ":="},
 };

@@ -35,9 +35,11 @@ private:
   std::shared_ptr<Token> ConsumeToken() { return _lexer->ConsumeToken(); }
   std::shared_ptr<Token> Match(TOKEN tag) {
 #ifdef DEBUG
-    std::cout << "Match: " << Token::tag_to_string[tag] << std::endl;
+    std::cout << "Match: " << Token::tag_to_string[tag] << "---->"
+              << PeekToken()->position() << std::endl;
+    std::cout << "Current Token: " << Token::tag_to_string[PeekToken()->tag()] << std::endl;
+    std::cout << "Next Token: " << Token::tag_to_string[PeekNextToken()->tag()] << std::endl;
 #endif // DEBUG
-
     assert(PeekToken(tag));
     return ConsumeToken();
   }
@@ -56,7 +58,16 @@ public:
       : _lexer(std::make_unique<Lexer>(filename)),
         _root_scope(std::make_shared<Scope>()), _current_scope(_root_scope) {}
   ~Parser() = default;
-  bool Scan() { return TranslationUnit(); }
+  bool Scan() {
+    auto result = TranslationUnit();
+    if (result) {
+      std::cout << "Parser::Scan finished! Found no errors." << std::endl;
+      return true;
+    } else {
+      std::cout << "Parser::Scan found error(s)." << std::endl;
+      return false;
+    }
+  }
 
   // Expressions
   std::unique_ptr<Expr> Expression();

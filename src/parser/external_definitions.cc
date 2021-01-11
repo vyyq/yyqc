@@ -1,6 +1,6 @@
 #include "parser.h"
-#include <iostream>
 #include <cassert>
+#include <iostream>
 
 // External Definitions
 
@@ -14,7 +14,7 @@ bool Parser::TranslationUnit() {
   while (scan && _lexer->PeekCurrentToken()->tag() != TOKEN::FILE_EOF) {
     scan = ExternalDeclaration();
   }
-  return scan;
+  return scan || PeekToken()->tag() == TOKEN::FILE_EOF;
 }
 
 /**
@@ -40,13 +40,39 @@ bool Parser::ExternalDeclaration() {
  *          declaration-list_{opt} compound-statement
  */
 bool Parser::FunctionDeclaration() {
+  auto snapshot = LexerSnapShot();
+#ifdef DEBUG
+  std::cout << ">>> Function Declaration" << std::endl;
+  std::cout << ">>> Declaration Specifier" << std::endl;
+#endif
   auto type_base = DeclarationSpecifier();
+  if (!type_base) {
+    LexerPutBack(snapshot);
+    return false;
+  }
+#ifdef DEBUG
+  std::cout << "<<< Declaration Specifier" << std::endl;
+  std::cout << ">>> Declarator" << std::endl;
+#endif
   auto delegator = Declarator(type_base);
+  if (!delegator) {
+    LexerPutBack(snapshot);
+    return false;
+  }
+#ifdef DEBUG
+  std::cout << "<<< Declarator" << std::endl;
+  std::cout << ">>> Compound Statement" << std::endl;
+#endif
   /* TODO: declaration_list_{opt} */
   auto compound_statement = CompoundStatement();
-  (void)compound_statement;
-
-  return false;
+  if (!compound_statement) {
+    LexerPutBack(snapshot);
+    return false;
+  }
+#ifdef DEBUG
+  std::cout << "<<< CompoundStatement" << std::endl;
+#endif
+  return true;
 }
 
 /**

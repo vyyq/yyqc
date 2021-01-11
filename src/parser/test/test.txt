@@ -4,4 +4,10 @@ int func();
 int ***a;
 int foo(int a, int b, ...);
 int boo(int a, int b, float c);
-hi = 5;
+int bug() {
+  a = 6;
+  if (a == 5) {
+    a = 7;
+    float *a;
+  }
+}
