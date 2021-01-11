@@ -10,8 +10,6 @@
 #include <sstream>
 #include <string>
 
-
-
 /**
  * declarator  ->  pointer_{opt} direct-declarator
  * Here type base should not be a unique_ptr with ownership since this function
@@ -68,9 +66,8 @@ Parser::DirectDeclarator(std::unique_ptr<Type> &cloned_type_base) {
     */
     auto identifier_token = Match(TOKEN::IDENTIFIER);
 #ifdef DEBUG
-    std::cout << "See an Identifier. Its name is [ ";
-    identifier_token->value()->print();
-    std::cout << " ]." << std::endl;
+    std::cout << "See an Identifier. Its name is [ "
+              << *identifier_token->value() << " ]." << std::endl;
 #endif // DEBUG
     auto type = DirectDeclaratorPrime(cloned_type_base);
     auto symbol = std::make_unique<Symbol>(identifier_token, type);
@@ -307,9 +304,8 @@ Parser::GeneralDirectDeclarator(std::unique_ptr<Type> &cloned_type_base) {
   if (token->tag() == TOKEN::IDENTIFIER) {
     auto identifier_token = Match(TOKEN::IDENTIFIER);
 #ifdef DEBUG
-    std::cout << "See an Identifier. Its name is [ ";
-    identifier_token->value()->print();
-    std::cout << " ]." << std::endl;
+    std::cout << "See an Identifier. Its name is [ "
+              << *identifier_token->value() << " ]." << std::endl;
 #endif // DEBUG
     auto type = GeneralDirectDeclaratorPrime(cloned_type_base);
     auto symbol = std::make_unique<Symbol>(identifier_token, type);

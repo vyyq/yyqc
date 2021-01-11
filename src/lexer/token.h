@@ -167,8 +167,11 @@ public:
   std::unique_ptr<Value> &value() { return _value; }
   const Position &position() const { return _position; }
   friend std::ostream &operator<<(std::ostream &os, const Token &token) {
-    os << "[Token: " << tag_to_string[token._tag] << "] [" << token._position
-       << "]";
+    os << "[Token: " << tag_to_string[token._tag];
+    if (token._tag == TOKEN::IDENTIFIER) {
+      os << " : " << *token._value;
+    }
+    os << "] [" << token._position << "]";
     return os;
   }
   bool IsKeyword() const {

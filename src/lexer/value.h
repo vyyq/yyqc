@@ -16,8 +16,10 @@ class Value {
       os << "Float value: " << *pval;
     } else if (auto pval = std::get_if<char>(val_ptr)) {
       os << "Char value: " << *pval;
-    } else {
+    } else if (auto pval = std::get_if<std::string>(val_ptr)){
       os << "String value: " << *pval;
+    } else {
+      os << "Cannot convert!!!";
     }
     return os;
   }
@@ -26,7 +28,6 @@ public:
   Value(double x) : _value(x) {}
   Value(std::string x) : _value(std::move(x)) {}
   ~Value(){}
-  void print() const { std::cout << ""; };
 private:
   std::variant<long long, double,char ,std::string> _value;
 };

@@ -82,7 +82,7 @@ private:
     OStreamSpecifierQualifier(os);
     os << std::endl;
     os << "Total parameters: " << _parameter_list.size() << std::endl;
-    os << "Total expressions:";
+    os << "Total expressions: ";
     if (_compound_stmt) {
       os << _compound_stmt->stmts().size();
     } else {

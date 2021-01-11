@@ -76,6 +76,8 @@ bool Parser::FunctionDeclaration() {
     LexerPutBack(snapshot);
     return false;
   }
+  ((FunctionType *)((delegator->type()).get()))->set_compound_stmt(compound_statement);
+  // _current_scope.lock()->AddSymbol(delegator);
 #ifdef DEBUG
   std::cout << "<<< CompoundStatement" << std::endl;
       print_line();
@@ -83,9 +85,6 @@ bool Parser::FunctionDeclaration() {
       std::cout << *(delegator->type());
       print_line();
 #endif // DEBUG
-
-  // ((FunctionType *)((delegator->type()).get()))->set_compound_stmt(compound_statement);
-  // _current_scope->AddSymbol(delegator);
   return true;
 }
 

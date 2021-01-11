@@ -22,7 +22,7 @@ public:
   std::shared_ptr<Scope> &AddSubScope() {
     auto child = std::make_shared<Scope>();
     child->set_parent(weak_from_this());
-    _children.push_back(child);
+    _children.push_back(std::move(child));
     return _children.back();
   }
 
