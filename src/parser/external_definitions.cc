@@ -25,7 +25,14 @@ bool Parser::TranslationUnit() {
 bool Parser::ExternalDeclaration() {
   auto declarations = Declaration();
   if (declarations.size() >= 1) {
-    _current_scope->AddSymbols(declarations);
+#ifdef DEBUG
+      print_line();
+      auto &last_element = declarations.back();
+      std::cout << "Symbol added: " << *last_element << std::endl;
+      std::cout << *(last_element->type());
+      print_line();
+#endif // DEBUG
+    _current_scope.lock()->AddSymbols(declarations);
     return true;
   }
   if (FunctionDeclaration()) {
@@ -71,7 +78,14 @@ bool Parser::FunctionDeclaration() {
   }
 #ifdef DEBUG
   std::cout << "<<< CompoundStatement" << std::endl;
-#endif
+      print_line();
+      std::cout << "Symbol added: " << *delegator << std::endl;
+      std::cout << *(delegator->type());
+      print_line();
+#endif // DEBUG
+
+  // ((FunctionType *)((delegator->type()).get()))->set_compound_stmt(compound_statement);
+  // _current_scope->AddSymbol(delegator);
   return true;
 }
 

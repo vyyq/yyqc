@@ -1,7 +1,6 @@
 #ifndef _STMT_H_
 #define _STMT_H_
 #include "../symbol/scope.h"
-#include "../type/type_base.h"
 #include "ast_base.h"
 #include <atomic>
 #include <iterator>
@@ -24,7 +23,7 @@ public:
 class CompoundStmt : public Stmt {
 private:
   std::vector<std::unique_ptr<Stmt>> _stmts;
-  std::shared_ptr<Scope> _self_scope = nullptr;
+  std::weak_ptr<Scope> _self_scope;
 
 public:
   CompoundStmt() = default;
@@ -33,7 +32,7 @@ public:
     _stmts.insert(_stmts.end(), std::make_move_iterator(stmts.begin()),
                   std::make_move_iterator(stmts.end()));
   }
-  void set_scope(std::shared_ptr<Scope> &scope) { _self_scope = scope; }
+  void set_scope(std::weak_ptr<Scope> &scope) { _self_scope = scope; }
 };
 
 class SelectionStmt : public Stmt {};

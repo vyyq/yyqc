@@ -1,10 +1,12 @@
 #ifndef _ABSTRACT_TYPE_H_
 #define _ABSTRACT_TYPE_H_
 
-#include "../ast/ast_base.h"
 #include "../error/error.h"
+#include "../ast/ast_base.h"
 #include <cassert>
 #include <cstdint>
+#include <memory>
+#include <vector>
 
 #define WORD_LENGTH 4
 #define INT_LENGTH 4
@@ -146,7 +148,7 @@ public:
         this->_storage_class_specifier_flag, this->_type_specifier_flag,
         this->_type_qualifier_flag, this->_function_specifier_flag,
         this->_complete);
-    return std::move(new_type);
+    return new_type;
   }
   virtual void OStreamFullMessage(std::ostream &os) const {
     os << "Type:" << std::endl;

@@ -12,6 +12,7 @@
 #include "../util/print_info.h"
 #include <cassert>
 #include <iostream>
+#include <memory>
 #include <set>
 #include <string>
 #include <tuple>
@@ -45,15 +46,17 @@ private:
   }
   unsigned LexerSnapShot() { return _lexer->ScreenShot(); }
   void LexerPutBack(unsigned screenshot) { return _lexer->PutBack(screenshot); }
-  std::shared_ptr<Scope> CurrentScope() { return _current_scope; }
-  bool isRootScope() { return _current_scope->parent() == nullptr; }
+  std::weak_ptr<Scope> &CurrentScope() { return _current_scope; }
+  bool isRootScope() { return _current_scope.lock()->parent().lock() == nullptr; }
 
 public:
   void EnterNewSubScope() {
-    auto &curr = _current_scope->AddSubScope();
+    auto &curr = _current_scope.lock()->AddSubScope();
     _current_scope = curr;
   }
-  void ExitCurrentSubScope() {}
+  void ExitCurrentSubScope() {
+    _current_scope = _current_scope.lock()->parent();
+  }
   explicit Parser(const std::string &filename)
       : _lexer(std::make_unique<Lexer>(filename)),
         _root_scope(std::make_shared<Scope>()), _current_scope(_root_scope) {}
@@ -183,11 +186,9 @@ private:
   std::unique_ptr<Type> GeneralDirectDeclaratorPrime(std::unique_ptr<Type> &);
 
 private:
-  // Lexer *_lexer;
   std::unique_ptr<Lexer> _lexer;
-  // Scope *_scope;
   std::shared_ptr<Scope> _root_scope;
-  std::shared_ptr<Scope> _current_scope;
+  std::weak_ptr<Scope> _current_scope;
 
 private:
   std::set<TOKEN> scs{TOKEN::TYPEDEF,      TOKEN::EXTERN, TOKEN::STATIC,

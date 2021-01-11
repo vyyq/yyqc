@@ -255,9 +255,6 @@ std::pair<bool, std::vector<std::unique_ptr<Stmt>>> Parser::BlockItemList() {
   std::vector<std::unique_ptr<Stmt>> stmt_items;
   auto token = PeekToken();
   while (PeekToken()->tag() != TOKEN::RBRACE) {
-#ifdef DEBUG
-    std::cout << "block-item-list: while again." << std::endl;
-#endif
     auto declaration = Declaration();
     if (declaration.size() == 0) {
       auto statement = Statement();
@@ -268,7 +265,7 @@ std::pair<bool, std::vector<std::unique_ptr<Stmt>>> Parser::BlockItemList() {
         return std::make_pair(false, std::vector<std::unique_ptr<Stmt>>());
       }
     } else {
-      _current_scope->AddSymbols(declaration);
+      _current_scope.lock()->AddSymbols(declaration);
     }
   }
   return std::make_pair(true, std::move(stmt_items));

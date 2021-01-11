@@ -2,6 +2,7 @@
 #define _DERIVED_TYPE_H_
 
 #include "type_base.h"
+#include "../ast/stmt.h"
 #include <list>
 
 class Identifier;
@@ -48,7 +49,6 @@ class FunctionType : public DerivedType {
     type.OStreamFullMessage(out);
     return out;
   }
-
 public:
   FunctionType(std::unique_ptr<Type> &base) : _base(std::move(base)) {}
   virtual bool IsFunctionType() const override { return true; }
@@ -59,16 +59,19 @@ public:
                            std::make_move_iterator(src.begin()),
                            std::make_move_iterator(src.end()));
   }
-  void PrintParameters() {
-    // std::copy(_parameter_list.begin(), _parameter_list.end(),
-    //           std::ostream_iterator<std::unique_ptr<Symbol>>(std::cout,
-    //           "\n"));
+  void PrintParameters() {}
+  void set_compound_stmt(std::unique_ptr<CompoundStmt> &compound_stmt) {
+    _compound_stmt = std::move(compound_stmt);
+  }
+  std::unique_ptr<CompoundStmt> &compound_stmt() {
+    return _compound_stmt;
   }
 
 private:
   std::unique_ptr<Type> _base = nullptr; // Actually the returned one.
   bool _is_variadic = false;
   std::vector<std::unique_ptr<Symbol>> _parameter_list;
+  std::unique_ptr<CompoundStmt> _compound_stmt;
 
   virtual void OStreamConciseMessage(std::ostream &os) const override {
     os << "Function" << std::endl;
@@ -79,6 +82,13 @@ private:
     OStreamSpecifierQualifier(os);
     os << std::endl;
     os << "Total parameters: " << _parameter_list.size() << std::endl;
+    os << "Total expressions:";
+    if (_compound_stmt) {
+      os << _compound_stmt->stmts().size();
+    } else {
+      os << 0;
+    }
+    os << std::endl;
     os << "Variadic: " << (_is_variadic ? "true" : "false") << std::endl;
   }
 };
@@ -103,7 +113,6 @@ public:
   }
 
 private:
-  // Type *_base;
   std::unique_ptr<Type> _base;
   virtual void OStreamFullMessage(std::ostream &os) const override {
     os << "Type: Pointer" << std::endl;

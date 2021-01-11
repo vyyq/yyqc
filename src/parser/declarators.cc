@@ -72,9 +72,9 @@ Parser::DirectDeclarator(std::unique_ptr<Type> &cloned_type_base) {
     identifier_token->value()->print();
     std::cout << " ]." << std::endl;
 #endif // DEBUG
-    auto type = std::move(DirectDeclaratorPrime(cloned_type_base));
+    auto type = DirectDeclaratorPrime(cloned_type_base);
     auto symbol = std::make_unique<Symbol>(identifier_token, type);
-    return std::move(symbol);
+    return symbol;
   } else if (token->tag() == TOKEN::LPAR) {
     /**
      * If, in the declaration "T D1", D1 has the form (D) then ident has the
@@ -83,11 +83,11 @@ Parser::DirectDeclarator(std::unique_ptr<Type> &cloned_type_base) {
      * binding of complicated declarators may be altered by parentheses.
      */
     Match(TOKEN::LPAR);
-    auto symbol = std::move(Declarator(cloned_type_base));
+    auto symbol = Declarator(cloned_type_base);
     Match(TOKEN::RPAR);
-    auto new_type = std::move(DirectDeclaratorPrime(symbol->type()));
+    auto new_type = DirectDeclaratorPrime(symbol->type());
     symbol->set_type(new_type);
-    return std::move(symbol);
+    return symbol;
   } else {
     return nullptr;
   }
@@ -105,7 +105,7 @@ Parser::DirectDeclaratorPrime(std::unique_ptr<Type> &cloned_type_base) {
     return std::move(cloned_type_base);
   }
   // TODO: DirectDeclaratorPrime(cloned_type_base);
-  return std::move(derived_type);
+  return derived_type;
 }
 
 /**
@@ -122,7 +122,7 @@ Parser::ArrayDeclarator(std::unique_ptr<Type> &cloned_array_base) {
   auto array_type =
       std::make_unique<ArrayType>(cloned_array_base, array_length);
   Match(TOKEN::RSQUBRKT);
-  return std::move(array_type);
+  return array_type;
 }
 
 // VLA support?
@@ -172,7 +172,7 @@ Parser::FunctionDeclarator(std::unique_ptr<Type> &cloned_function_base) {
 #ifdef DEBUG
   std::cout << "<<< Function Declarator" << std::endl;
 #endif // DEBUG
-  return std::move(function_type);
+  return function_type;
 }
 
 void Parser::FunctionDeclaratorInParanthesis(
@@ -195,10 +195,10 @@ Parser::AbstractDeclarator(const std::unique_ptr<Type> &type_base) {
   if (tag == TOKEN::STAR) {
     cloned_type_base = Pointer(cloned_type_base);
     auto symbol = DirectAbstractDeclarator(cloned_type_base);
-    return std::move(symbol);
+    return symbol;
   } else if (tag == TOKEN::LPAR || tag == TOKEN::LSQUBRKT) {
     auto symbol = DirectAbstractDeclarator(cloned_type_base);
-    return std::move(symbol);
+    return symbol;
   } else {
     // abstract-declarator starts with (, [ or *.
     return nullptr;
@@ -311,16 +311,16 @@ Parser::GeneralDirectDeclarator(std::unique_ptr<Type> &cloned_type_base) {
     identifier_token->value()->print();
     std::cout << " ]." << std::endl;
 #endif // DEBUG
-    auto type = std::move(GeneralDirectDeclaratorPrime(cloned_type_base));
+    auto type = GeneralDirectDeclaratorPrime(cloned_type_base);
     auto symbol = std::make_unique<Symbol>(identifier_token, type);
-    return std::move(symbol);
+    return symbol;
   } else if (token->tag() == TOKEN::LPAR) {
     Match(TOKEN::LPAR);
-    auto symbol = std::move(GeneralDeclarator(cloned_type_base));
+    auto symbol = GeneralDeclarator(cloned_type_base);
     Match(TOKEN::RPAR);
-    auto new_type = std::move(GeneralDirectDeclaratorPrime(symbol->type()));
+    auto new_type = GeneralDirectDeclaratorPrime(symbol->type());
     symbol->set_type(new_type);
-    return std::move(symbol);
+    return symbol;
   } else {
     return nullptr;
   }
@@ -337,7 +337,7 @@ Parser::GeneralDirectDeclaratorPrime(std::unique_ptr<Type> &cloned_type_base) {
   } else {
     return std::move(cloned_type_base);
   }
-  return std::move(derived_type);
+  return derived_type;
 }
 
 /**
@@ -353,10 +353,16 @@ Parser::GeneralDirectDeclaratorPrime(std::unique_ptr<Type> &cloned_type_base) {
  *                              , struct-declarator struct-declarator-list'
  *                              ${epsilon}
  */
-void Parser::StructDeclaratorList(Type *declarator_base, StructUnionType *su) {}
+void Parser::StructDeclaratorList(Type *declarator_base, StructUnionType *su) {
+  (void)declarator_base;
+  (void)su;
+}
 
 void Parser::StructDeclaratorListPrime(Type *declarator_base,
-                                       StructUnionType *su) {}
+                                       StructUnionType *su) {
+  (void)declarator_base;
+  (void)su;
+}
 
 /**
  *  struct-declarator   ->
@@ -364,5 +370,6 @@ void Parser::StructDeclaratorListPrime(Type *declarator_base,
  *                          declarator_{opt} : constant-expression
  */
 std::tuple<Token *, Type *> Parser::StructDeclarator(Type *type) {
+  (void)type;
   return std::make_tuple(nullptr, nullptr);
 }

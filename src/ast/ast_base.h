@@ -8,7 +8,6 @@ enum class IdentifierNameSpace;
 class ASTNode;
 class Stmt;
 class Expr;
-class FunctionNode;
 class LabeledStmt;
 class CompoundStmt;
 class SelectionStmt;
@@ -112,25 +111,25 @@ enum class OP {
 
 class ASTNode {
 public:
-  virtual ~ASTNode();
+  virtual ~ASTNode() {}
 };
 
-class Stmt : public ASTNode {};
+class Stmt : public ASTNode {
+public:
+  virtual ~Stmt() {}
+};
 
 class Expr : public ASTNode {
 public:
   void set_token(std::unique_ptr<Token> token) { _token = std::move(token); }
   virtual ~Expr() {}
+
 protected:
   Expr(std::shared_ptr<Token> token) : _token(token) {}
   virtual bool IsLValue() const = 0;
+
 private:
   std::shared_ptr<Token> _token;
-};
-
-class FunctionNode : ASTNode {
-public:
-
 };
 
 #endif
