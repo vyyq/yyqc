@@ -29,7 +29,7 @@ public:
   Value(std::string x) : _value(std::move(x)) {}
   ~Value(){}
 private:
-  std::variant<long long, double,char ,std::string> _value;
+  std::variant<long long, double,char ,std::string> _value = "";
 };
 
 

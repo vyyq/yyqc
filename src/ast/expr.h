@@ -12,6 +12,10 @@
 class PrimaryExpr : public Expr {
 public:
   PrimaryExpr(std::shared_ptr<Token> token) : Expr(token) {}
+protected:
+  virtual void print(std::ostream &os) const override {
+    os << "PrimaryExpr: " << *_token;
+  }
 };
 
 enum class IdentifierNameSpace {
@@ -30,26 +34,32 @@ public:
   Identifier(std::shared_ptr<Token> token) : PrimaryExpr(std::move(token)) {}
   Identifier(std::shared_ptr<Token> token, IdentifierNameSpace name_space)
       : PrimaryExpr(std::move(token)), _name_space(name_space) {}
-  virtual bool IsLValue() const { return true; }
-
+  virtual bool IsLValue() const override { return true; }
+protected:
+  virtual void print(std::ostream &os) const override {
+    os << "Identifier: " << *_token;
+  }
 private:
   IdentifierNameSpace _name_space = IdentifierNameSpace::UNKNOWN;
 };
 
 class Constant : public PrimaryExpr {
 public:
-  virtual bool IsLValue() const { return false; }
+  virtual bool IsLValue() const override { return false; }
   Constant(std::shared_ptr<Token> token, std::unique_ptr<Value> &val)
       : PrimaryExpr(token), _value(std::move(val)) {}
   Constant(std::shared_ptr<Token> token) : PrimaryExpr(token) {}
-
+protected:
+  virtual void print(std::ostream &os) const override {
+    os << "Constant: " << *_token << " || " << *_value;
+  }
 private:
   std::unique_ptr<Value> _value;
 };
 
 class UnaryOperatorExpr : public Expr {
 public:
-  virtual bool IsLValue() const { return true; }
+  virtual bool IsLValue() const override { return true; }
   UnaryOperatorExpr(OP op, std::unique_ptr<Expr> &operand,
                     std::shared_ptr<Token> &token)
       : Expr(token), _operator(op), _operand(std::move(operand)) {}
@@ -59,7 +69,12 @@ public:
   void set_operand(std::unique_ptr<Expr> &operand) {
     _operand = std::move(operand);
   }
-
+protected:
+  virtual void print(std::ostream &os) const override {
+    os << "Unary Operator Expression: " << std::endl;
+    os << "OP: " << op_to_string.at(_operator)  << std::endl;
+    _operand->print(os);
+  }
 private:
   OP _operator;
   std::unique_ptr<Expr> _operand;
@@ -67,7 +82,7 @@ private:
 
 class BinaryOperatorExpr : public Expr {
 public:
-  virtual bool IsLValue() const { return false; };
+  virtual bool IsLValue() const override { return false; };
   BinaryOperatorExpr(OP op, std::unique_ptr<Expr> &operand1,
                               std::unique_ptr<Expr> &operand2,
                               std::shared_ptr<Token> token = nullptr)
@@ -80,7 +95,13 @@ public:
   void set_operand2(std::unique_ptr<Expr> operand2) {
     _operand2 = std::move(operand2);
   }
-
+protected:
+  virtual void print(std::ostream &os) const override {
+    os << "Binary Operator Expression: " << std::endl;
+    _operand1->print(os);
+    os << std::endl << "OP: " << op_to_string.at(_operator)  << std::endl;
+    _operand2->print(os);
+  }
 private:
   OP _operator;
   std::unique_ptr<Expr> _operand1;

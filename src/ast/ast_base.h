@@ -2,6 +2,7 @@
 #define _AST_BASE_H
 #include "../lexer/token.h"
 #include "../lexer/value.h"
+#include <unordered_map>
 
 enum class IdentifierNameSpace;
 
@@ -110,25 +111,85 @@ enum class OP {
 };
 
 class ASTNode {
+  friend std::ostream &operator<<(std::ostream &os, const ASTNode &node) {
+    node.print(os);
+    return os;
+  }
+
 public:
   virtual ~ASTNode() {}
+  virtual void print(std::ostream &os) const { os << "ASTNode"; }
 };
 
 class Stmt : public ASTNode {
+  friend std::ostream &operator<<(std::ostream &os, const Stmt &stmt) {
+    stmt.print(os);
+    return os;
+  }
+
 public:
   virtual ~Stmt() {}
+  virtual void print(std::ostream &os) const { os << "Stmt"; }
 };
 
 class Expr : public ASTNode {
+  friend std::ostream &operator<<(std::ostream &os, const Expr &expr) {
+    expr.print(os);
+    return os;
+  }
 public:
   void set_token(std::unique_ptr<Token> token) { _token = std::move(token); }
   virtual ~Expr() {}
+  virtual void print(std::ostream &os) const { os << "Expr: " << *_token; }
+  static inline std::unordered_map<OP, std::string> op_to_string{
+      {OP::AND, "&"},
+      {OP::AND_ASSIGN, "&="},
+      {OP::ARROW_REFERENCE, "->"},
+      {OP::ASSIGN, "="},
+      {OP::COLON, ":"},
+      {OP::COND, "?"},
+      {OP::DEREFERENCE, "* (derefrence)"},
+      {OP::DIVIDE, "/ (divide)"},
+      {OP::DIVIDE_ASSIGN, "/="},
+      {OP::EQ, "=="},
+      {OP::GE, ">="},
+      {OP::GET_ADDRESS, "& (address)"},
+      {OP::GREATER, ">"},
+      {OP::LE, "<="},
+      {OP::LEFT_SHIFT, "<<"},
+      {OP::LEFT_SHIFT_ASSIGN, "<<="},
+      {OP::LESS, "<"},
+      {OP::LOGICAL_AND, "&&"},
+      {OP::LOGICAL_OR, "||"},
+      {OP::MINUS, "-"},
+      {OP::MINUS_ASSIGN, "-="},
+      {OP::MOD, "% (mod)"},
+      {OP::MOD_ASSIGN, "%="},
+      {OP::MULTIPLY, "* (multiply)"},
+      {OP::MULTIPLY_ASSIGN, "*="},
+      {OP::NE, "!="},
+      {OP::NEGATION, "!"},
+      {OP::NEGATIVE, "- (negative)"},
+      {OP::NOT_ASSIGN, "^="},
+      {OP::OR, "|"},
+      {OP::OR_ASSIGN, "|="},
+      {OP::PLUS, "+"},
+      {OP::PLUS_ASSIGN, "+="},
+      {OP::POINT_REFERENCE, ". (reference)"},
+      {OP::POSITIVE, "+ (positive)"},
+      {OP::POSTFIX_DEC, "-- (postfix)"},
+      {OP::POSTFIX_INC, "++ (postfix)"},
+      {OP::PREFIX_DEC, "-- (prefix)"},
+      {OP::PREFIX_INC, "++ (prefix)"},
+      {OP::RIGHT_SHIFT, ">>"},
+      {OP::RIGHT_SHIFT_ASSIGN, ">>="},
+      {OP::SIZEOF, "sizeof"},
+      {OP::XOR, "xor"},
+  };
 
 protected:
   Expr(std::shared_ptr<Token> token) : _token(token) {}
-  virtual bool IsLValue() const = 0;
-
-private:
+  virtual bool IsLValue() const { return false; }
   std::shared_ptr<Token> _token;
 };
 

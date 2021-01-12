@@ -997,6 +997,12 @@ std::unique_ptr<Expr> Parser::AssignmentExpr() {
       return conditional_expr;
     }
   }
+#ifdef DEBUG
+      print_line();
+      std::cout << "AssignmentExpr: lhs succeeded: " << std::endl;
+      std::cout << *lhs << std::endl;
+      print_line();
+#endif
   auto token = PeekToken();
   auto tag = token->tag();
   OP op;
@@ -1023,6 +1029,7 @@ std::unique_ptr<Expr> Parser::AssignmentExpr() {
   } else if (tag == TOKEN::OR_ASSIGN) {
     op = OP::OR_ASSIGN;
   } else {
+    LexerPutBack(snapshot);
     auto conditional_expr = ConditionalExpr();
     if (!conditional_expr) {
       LexerPutBack(snapshot);
@@ -1032,6 +1039,12 @@ std::unique_ptr<Expr> Parser::AssignmentExpr() {
     }
   }
   ConsumeToken();
+#ifdef DEBUG
+      print_line();
+      std::cout << "AssignmentExpr: OP succeeded: " << std::endl;
+      std::cout << Expr::op_to_string[op] << std::endl;
+      print_line();
+#endif
   auto rhs = AssignmentExpr();
   if (!rhs) {
     auto conditional_expr = ConditionalExpr();
@@ -1039,10 +1052,23 @@ std::unique_ptr<Expr> Parser::AssignmentExpr() {
       LexerPutBack(snapshot);
       return nullptr;
     } else {
+#ifdef DEBUG
+      print_line();
+      std::cout << "AssignmentExpr: rhs failed." << std::endl;
+      std::cout << "New conditional_expr: " << std::endl;
+      std::cout << *conditional_expr << std::endl;
+      print_line();
+#endif
       return conditional_expr;
     }
   }
   auto expr = std::make_unique<BinaryOperatorExpr>(op, lhs, rhs, token);
+#ifdef DEBUG
+  print_line();
+  std::cout << "AssignmentExpr: recognition succeeded. make BinaryOperatorExpr: " << std::endl;
+  std::cout << *expr << std::endl;
+  print_line();
+#endif
   return expr;
 }
 

@@ -4,7 +4,7 @@ int func();
 int ***a;
 int foo(int a, int b, ...);
 int boo(int a, int b, float c);
-int bug() {
+int bug(int a, int c) {
   a = 6;
   if (a == 5) {
     a = 7;
