@@ -2,6 +2,7 @@ int get, put ;
 int hi;
 int func();
 int ***a;
+int c[10];
 int foo(int a, int b, ...);
 int boo(int a, int b, float c);
 int bug(int a, int c) {

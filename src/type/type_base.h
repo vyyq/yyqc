@@ -292,9 +292,9 @@ public:
 class VoidType : public Type {
 public:
   virtual ~VoidType() = default;
-  virtual int width() const { return 0; }
+  virtual int width() const override { return 0; }
   VoidType() : Type(false) {}
-  virtual bool IsVoidType() const { return true; }
+  virtual bool IsVoidType() const override { return true; }
 };
 
 #endif

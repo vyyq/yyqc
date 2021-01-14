@@ -30,6 +30,11 @@ public:
   Value(std::string x) : _value(std::move(x)) {}
   ~Value() {}
 
+  long long get_integral_value() { return std::get<long long>(_value); }
+  double get_float_value() { return std::get<double>(_value); }
+  char get_char_value() { return std::get<char>(_value); }
+  std::string get_string_value() { return std::get<std::string>(_value); }
+
 private:
   std::variant<long long, double, char, std::string> _value = "";
 };

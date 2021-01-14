@@ -137,14 +137,13 @@ Parser::ArrayDeclarator(std::unique_ptr<Type> &cloned_array_base) {
  *
  * Maybe it'll be supported later.
  */
-int Parser::ArrayDeclaratorInBracket() {
+long long Parser::ArrayDeclaratorInBracket() {
   auto token = PeekToken();
-  if (PeekToken()->tag() == TOKEN::INTEGER_CONTANT) {
-    // int value = token->value()->
+  if (token->tag() == TOKEN::INTEGER_CONTANT) {
+    auto ll = token->value()->get_integral_value();
     Match(TOKEN::INTEGER_CONTANT);
-    // return std::stoi(token->value());
-    return -1;
-  } else if (PeekToken()->tag() == TOKEN::RSQUBRKT) {
+    return ll;
+  } else if (token->tag() == TOKEN::RSQUBRKT) {
     return -1; // The length has not been determined.
   } else {
     return -1;

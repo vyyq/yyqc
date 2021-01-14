@@ -175,7 +175,7 @@ private:
   void StructDeclaratorListPrime(Type *, StructUnionType *); // in cc
   std::unique_ptr<ArrayType>
   ArrayDeclarator(std::unique_ptr<Type> &); // 6.7.6.2      // in cc
-  int ArrayDeclaratorInBracket();           // in cc
+  long long ArrayDeclaratorInBracket();           // in cc
   std::unique_ptr<FunctionType>
   FunctionDeclarator(std::unique_ptr<Type> &); // 6.7.6.3      // in cc
   void FunctionDeclaratorInParanthesis(std::unique_ptr<FunctionType> &);

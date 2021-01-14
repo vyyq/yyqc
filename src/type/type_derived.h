@@ -1,20 +1,38 @@
 #ifndef _DERIVED_TYPE_H_
 #define _DERIVED_TYPE_H_
 
-#include "type_base.h"
 #include "../ast/stmt.h"
+#include "type_base.h"
 #include <list>
 
 class Identifier;
 class OrdinaryIdentifier;
 
 class ArrayType : public DerivedType {
+  friend std::ostream &operator<<(std::ostream &out, const ArrayType &type) {
+    type.OStreamFullMessage(out);
+    return out;
+  }
+
 public:
   ArrayType(std::unique_ptr<Type> &base, int length)
       : _base(std::move(base)), _length(length) {}
-  virtual bool IsArrayType() const { return true; }
+  virtual bool IsArrayType() const override { return true; }
   unsigned length() const { return _length; }
-  virtual int width() const { return _base->width() * _length; }
+  virtual int width() const override { return _base->width() * _length; }
+  virtual void OStreamConciseMessage(std::ostream &os) const override {
+    os << "Array of ";
+    _base->OStreamConciseMessage(os);
+  }
+
+  virtual void OStreamFullMessage(std::ostream &os) const override {
+    os << "Type: Array of ";
+    _base->OStreamConciseMessage(os);
+    OStreamSpecifierQualifier(os);
+    os << std::endl;
+    os << "Length: " << _length << std::endl;
+    os << std::endl;
+  }
 
 private:
   std::unique_ptr<Type> _base;
@@ -49,6 +67,7 @@ class FunctionType : public DerivedType {
     type.OStreamFullMessage(out);
     return out;
   }
+
 public:
   FunctionType(std::unique_ptr<Type> &base) : _base(std::move(base)) {}
   virtual bool IsFunctionType() const override { return true; }
@@ -63,9 +82,7 @@ public:
   void set_compound_stmt(std::unique_ptr<CompoundStmt> &compound_stmt) {
     _compound_stmt = std::move(compound_stmt);
   }
-  std::unique_ptr<CompoundStmt> &compound_stmt() {
-    return _compound_stmt;
-  }
+  std::unique_ptr<CompoundStmt> &compound_stmt() { return _compound_stmt; }
 
 private:
   std::unique_ptr<Type> _base = nullptr; // Actually the returned one.
