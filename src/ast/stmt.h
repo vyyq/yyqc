@@ -15,7 +15,10 @@ class Type;
 class LabeledStmt : public Stmt {
 private:
   std::string _label;
-
+protected:
+  virtual void print(std::ostream &os) const override {
+    os << "Labeled Statement: " << _label;
+  }
 public:
   const std::string &label() const { return _label; }
 };

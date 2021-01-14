@@ -1,7 +1,7 @@
 #include "lexer.h"
+#include <cassert>
 #include <cctype>
 #include <cstddef>
-#include <cassert>
 #include <iostream>
 #include <string>
 const size_t APPEND_SIZE = 10;
@@ -61,8 +61,8 @@ bool Lexer::Tokenize() {
         ++length;
       }
       std::string string_value = file_content().substr(literal_start, length);
-      AddToken(TOKEN::STRING_LITERAL, start_position,
-               std::make_unique<Value>(string_value));
+      auto val = std::make_unique<Value>(string_value);
+      AddToken(TOKEN::STRING_LITERAL, start_position, val);
       ConsumeChar();
     } else if (curr == '#') {
       /* TODO */
@@ -376,11 +376,13 @@ bool HandleNumber(Lexer &lexer) {
       std::string str_val = lexer.file_content().substr(literal_start, length);
       if (is_integer) {
         // TODO
-        auto val = std::make_unique<Value>(std::stoll(str_val));
-        lexer.AddToken(tag, start_position, std::move(val));
+        auto ll = std::stoll(str_val);
+        auto val = std::make_unique<Value>(ll);
+        lexer.AddToken(tag, start_position, val);
       } else {
-        auto val = std::make_unique<Value>(std::stod(str_val));
-        lexer.AddToken(tag, start_position, std::move(val));
+        auto db = std::stod(str_val);
+        auto val = std::make_unique<Value>(db);
+        lexer.AddToken(tag, start_position, val);
       }
       return true;
     }
@@ -415,8 +417,8 @@ bool HandleIdentifier(Lexer &lexer) {
       }
       std::string str_val =
           lexer.file_content().substr(identifier_start, length);
-      lexer.AddToken(tag, start_position,
-                     std::make_unique<Value>(str_val));
+      auto val = std::make_unique<Value>(str_val);
+      lexer.AddToken(tag, start_position, val);
       return true;
     }
     ++length;
@@ -447,8 +449,8 @@ bool HandleCharLiteral(Lexer &lexer) {
     ++length;
   }
   std::string str_val = lexer.file_content().substr(literal_start, length);
-  lexer.AddToken(TOKEN::CHARACTER_CONSTANT, start_position,
-                 std::make_unique<Value>(str_val));
+  auto val = std::make_unique<Value>(str_val);
+  lexer.AddToken(TOKEN::CHARACTER_CONSTANT, start_position, val);
   lexer.ConsumeChar();
   return true;
 }

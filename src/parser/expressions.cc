@@ -18,9 +18,6 @@
  *                        | generic-selection
  */
 std::unique_ptr<Expr> Parser::PrimaryExpression() {
-#ifdef DEBUG
-  std::cout << ">>> Primary Expression" << std::endl;
-#endif
   auto token = PeekToken();
   auto tag = token->tag();
   if (tag == TOKEN::IDENTIFIER) {
@@ -63,20 +60,20 @@ std::unique_ptr<Expr> Parser::PrimaryExpression() {
 }
 
 std::unique_ptr<Expr> Parser::Expression() {
-#ifdef DEBUG
-  std::cout << ">>> Expression" << std::endl;
-#endif
   auto snapshot = LexerSnapShot();
   auto expr = AssignmentExpr();
   if (!expr) {
 #ifdef DEBUG
-    std::cout << "!!! Expression failed!" << std::endl;
+    std::cout << "Expression failed: in AssignmentExpr()" << std::endl;
 #endif
     LexerPutBack(snapshot);
     return nullptr;
   }
 #ifdef DEBUG
-  std::cout << "<<< Expression" << std::endl;
+  print_line();
+  std::cout << "Expression: succeeded: " << std::endl;
+  std::cout << *expr << std::endl;
+  print_line();
 #endif
   return expr;
   // TODO: expression, assignment-expression
@@ -99,20 +96,31 @@ std::unique_ptr<Expr> Parser::Expression() {
  *    | $epsilon$
  */
 std::unique_ptr<Expr> Parser::PostfixExpr() {
-#ifdef DEBUG
-  std::cout << ">>> Postfix Expression" << std::endl;
-#endif
+  auto snapshot = LexerSnapShot();
   auto expr = PrimaryExpression();
+  if (!expr) {
+#ifdef DEBUG
+    std::cout << "Postfix Expression failed: in PrimaryExpression."
+              << std::endl;
+#endif
+    LexerPutBack(snapshot);
+    return nullptr;
+  }
   auto postfix_expr_success = PostfixExprPrime(expr);
   if (postfix_expr_success) {
 #ifdef DEBUG
-    std::cout << "<<< Postfix Expression" << std::endl;
+    print_line();
+    std::cout << "Postfix: succeeded: " << std::endl;
+    std::cout << *expr << std::endl;
+    print_line();
 #endif
     return expr;
   } else {
 #ifdef DEBUG
-    std::cout << "!!! Postfix Expression failed!" << std::endl;
+    std::cout << "Postfix Expression failed: in PostfixPrime(expr)."
+              << std::endl;
 #endif
+    LexerPutBack(snapshot);
     return nullptr;
   }
   // TODO: support compound literal feature.
@@ -120,9 +128,6 @@ std::unique_ptr<Expr> Parser::PostfixExpr() {
 }
 
 bool Parser::PostfixExprPrime(std::unique_ptr<Expr> &expr) {
-#ifdef DEBUG
-  std::cout << ">>> Postfix Expression Prime" << std::endl;
-#endif
   auto snapshot = LexerSnapShot();
   auto token = PeekToken();
   bool scan_success = true;
@@ -147,9 +152,6 @@ bool Parser::PostfixExprPrime(std::unique_ptr<Expr> &expr) {
     return scan_success;
   }
   if (scan_success) {
-#ifdef DEBUG
-    std::cout << "<<< Postfix Expression Prime" << std::endl;
-#endif
     return PostfixExprPrime(expr);
   } else {
 #ifdef DEBUG
@@ -230,10 +232,6 @@ std::vector<std::unique_ptr<Expr>> Parser::ArgumentExpressionList() {
 }
 
 bool Parser::MemberReference(std::unique_ptr<Expr> &ptr) {
-#ifdef DEBUG
-  std::cout << ">>> Member Reference" << std::endl;
-#endif
-
   OP op;
   if (PeekToken(TOKEN::PTR_MEM_REF)) {
     Match(TOKEN::PTR_MEM_REF);
@@ -254,10 +252,6 @@ bool Parser::MemberReference(std::unique_ptr<Expr> &ptr) {
 }
 
 bool Parser::PostfixIncrement(std::unique_ptr<Expr> &operand) {
-#ifdef DEBUG
-  std::cout << ">>> Postfix Increment" << std::endl;
-#endif
-
   auto token = Match(TOKEN::INCREMENT);
   auto expr =
       std::make_unique<UnaryOperatorExpr>(OP::POSTFIX_INC, operand, token);
@@ -279,18 +273,29 @@ bool Parser::PostfixDecrement(std::unique_ptr<Expr> &operand) {
 // }
 
 std::unique_ptr<Expr> Parser::UnaryExpr() {
-#ifdef DEBUG
-  std::cout << ">>> Unary Expression" << std::endl;
-#endif
   auto snapshot = LexerSnapShot();
   auto token = PeekToken();
   auto tag = token->tag();
   if (tag == TOKEN::INCREMENT) {
     return PrefixIncrement();
   } else if (tag == TOKEN::DECREMENT) {
-    return PrefixDecrement();
+    auto expr = PrefixDecrement();
+#ifdef DEBUG
+    print_line();
+    std::cout << "Unary Expr: succeeded: " << std::endl;
+    std::cout << *expr << std::endl;
+    print_line();
+#endif
+    return expr;
   } else if (tag == TOKEN::SIZEOF) {
-    return Sizeof();
+    auto expr = Sizeof();
+#ifdef DEBUG
+    print_line();
+    std::cout << "Unary Expr: succeeded: " << std::endl;
+    std::cout << *expr << std::endl;
+    print_line();
+#endif
+    return expr;
   } else if (tag == TOKEN::ALIGNOF) {
     return nullptr; // TODO
   } else if (tag == TOKEN::AND || tag == TOKEN::STAR || tag == TOKEN::ADD ||
@@ -315,16 +320,20 @@ std::unique_ptr<Expr> Parser::UnaryExpr() {
       LexerPutBack(snapshot);
       return nullptr;
     }
-    return std::make_unique<UnaryOperatorExpr>(op, operand, token);
+    auto expr = std::make_unique<UnaryOperatorExpr>(op, operand, token);
+#ifdef DEBUG
+    print_line();
+    std::cout << "Unary Expr: succeeded: " << std::endl;
+    std::cout << *expr << std::endl;
+    print_line();
+#endif
+    return expr;
   } else {
     return PostfixExpr();
   }
 }
 
 std::unique_ptr<Expr> Parser::PrefixIncrement() {
-#ifdef DEBUG
-  std::cout << ">>> Prefix Increment" << std::endl;
-#endif
   auto snapshot = LexerSnapShot();
   auto token = PeekToken();
   Match(TOKEN::INCREMENT);
@@ -339,9 +348,6 @@ std::unique_ptr<Expr> Parser::PrefixIncrement() {
 }
 
 std::unique_ptr<Expr> Parser::PrefixDecrement() {
-#ifdef DEBUG
-  std::cout << ">>> Prefix Decrement" << std::endl;
-#endif
   auto snapshot = LexerSnapShot();
   auto token = PeekToken();
   Match(TOKEN::DECREMENT);
@@ -356,9 +362,6 @@ std::unique_ptr<Expr> Parser::PrefixDecrement() {
 }
 
 std::unique_ptr<Expr> Parser::Sizeof() {
-#ifdef DEBUG
-  std::cout << ">>> sizeof" << std::endl;
-#endif
   auto snapshot = LexerSnapShot();
   auto token = Match(TOKEN::SIZEOF);
   auto expr = UnaryExpr();
@@ -377,9 +380,6 @@ std::unique_ptr<Expr> Parser::Sizeof() {
 // Token *Parser::UnaryOperator() { return ConsumeToken(); }
 
 std::unique_ptr<Expr> Parser::CastExpr() {
-#ifdef DEBUG
-  std::cout << ">>> Cast Expression" << std::endl;
-#endif
   if (PeekToken(TOKEN::LPAR) && false) {
     // TODO: Handle ( type-name ) cast-expresssion
     return nullptr;
@@ -404,23 +404,40 @@ std::unique_ptr<Expr> Parser::CastExpr() {
  *                           | $\epsilon$
  */
 std::unique_ptr<Expr> Parser::MultiplicativeExpr() {
-#ifdef DEBUG
-  std::cout << ">>> Multiplicative Expression" << std::endl;
-#endif
   auto snapshot = LexerSnapShot();
   auto expr1 = CastExpr();
+  if (!expr1) {
+#ifdef DEBUG
+    std::cout << "MultiplicativeExpr: failed at CastExpr()." << std::endl;
+#endif
+    LexerPutBack(snapshot);
+    return nullptr;
+  }
+#ifdef DEBUG
+  print_line();
+  std::cout << "MultiplicativeExpr: CastExpr succeeded: " << std::endl;
+  std::cout << *expr1 << std::endl;
+  print_line();
+#endif
   if (MultiplicativeExprPrime(expr1)) {
+#ifdef DEBUG
+    print_line();
+    std::cout << "MultiplicativeExpr: succeeded, and returned " << std::endl;
+    std::cout << *expr1 << std::endl;
+    print_line();
+#endif
     return expr1;
   } else {
+#ifdef DEBUG
+    std::cout << "MultiplicativeExpr: failed at MultiplicativExprPrime(expr1)."
+              << std::endl;
+#endif
     LexerPutBack(snapshot);
     return nullptr;
   }
 }
 
 bool Parser::MultiplicativeExprPrime(std::unique_ptr<Expr> &operand1) {
-#ifdef DEBUG
-  std::cout << ">>> Multiplicative Expression Prime" << std::endl;
-#endif
   auto snapshot = LexerSnapShot();
   auto token = PeekToken();
   auto tag = token->tag();
@@ -474,18 +491,34 @@ bool Parser::MultiplicativeExprPrime(std::unique_ptr<Expr> &operand1) {
  *                           | $\epsilon$
  */
 std::unique_ptr<Expr> Parser::AdditiveExpr() {
-#ifdef DEBUG
-  std::cout << ">>> Additive Expression" << std::endl;
-#endif
   auto snapshot = LexerSnapShot();
   auto operand1 = MultiplicativeExpr();
   if (!operand1) {
+#ifdef DEBUG
+    std::cout << "AdditiveExpr: failed at MultiplicativeExpr()." << std::endl;
+#endif
     LexerPutBack(snapshot);
     return nullptr;
   }
+#ifdef DEBUG
+  print_line();
+  std::cout << "AdditiveExpr: MultiplicativeExpr succeeded: " << std::endl;
+  std::cout << *operand1 << std::endl;
+  print_line();
+#endif
   if (AdditiveExprPrime(operand1)) {
+#ifdef DEBUG
+    print_line();
+    std::cout << "AdditiveExpr: succeeded: " << std::endl;
+    std::cout << *operand1 << std::endl;
+    print_line();
+#endif
     return operand1;
   } else {
+#ifdef DEBUG
+    std::cout << "AdditiveExpr: failed at AdditiveExprPrime(operand1)."
+              << std::endl;
+#endif
     LexerPutBack(snapshot);
     return nullptr;
   }
@@ -998,10 +1031,10 @@ std::unique_ptr<Expr> Parser::AssignmentExpr() {
     }
   }
 #ifdef DEBUG
-      print_line();
-      std::cout << "AssignmentExpr: lhs succeeded: " << std::endl;
-      std::cout << *lhs << std::endl;
-      print_line();
+  print_line();
+  std::cout << "AssignmentExpr: lhs succeeded: " << std::endl;
+  std::cout << *lhs << std::endl;
+  print_line();
 #endif
   auto token = PeekToken();
   auto tag = token->tag();
@@ -1040,10 +1073,10 @@ std::unique_ptr<Expr> Parser::AssignmentExpr() {
   }
   ConsumeToken();
 #ifdef DEBUG
-      print_line();
-      std::cout << "AssignmentExpr: OP succeeded: " << std::endl;
-      std::cout << Expr::op_to_string[op] << std::endl;
-      print_line();
+  print_line();
+  std::cout << "AssignmentExpr: OP succeeded: " << std::endl;
+  std::cout << Expr::op_to_string[op] << std::endl;
+  print_line();
 #endif
   auto rhs = AssignmentExpr();
   if (!rhs) {
@@ -1065,7 +1098,9 @@ std::unique_ptr<Expr> Parser::AssignmentExpr() {
   auto expr = std::make_unique<BinaryOperatorExpr>(op, lhs, rhs, token);
 #ifdef DEBUG
   print_line();
-  std::cout << "AssignmentExpr: recognition succeeded. make BinaryOperatorExpr: " << std::endl;
+  std::cout
+      << "AssignmentExpr: recognition succeeded. make BinaryOperatorExpr: "
+      << std::endl;
   std::cout << *expr << std::endl;
   print_line();
 #endif

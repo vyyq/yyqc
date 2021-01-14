@@ -171,7 +171,7 @@ public:
     if (token._tag == TOKEN::IDENTIFIER) {
       os << " : " << *token._value;
     }
-    os << "] [" << token._position << "]";
+    os << "] [" << token._position << "] ---> " << *token._value;
     return os;
   }
   bool IsKeyword() const {

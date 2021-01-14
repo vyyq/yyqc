@@ -70,12 +70,12 @@ private:
 
   void AddToken(const TOKEN tag, const Position &position) {
     auto token = std::make_shared<Token>(tag, position);
-    _token_list.push_back(std::move(token));
+    _token_list.push_back(token);
   }
   void AddToken(const TOKEN tag, const Position &position,
-                std::unique_ptr<Value> value) {
+                std::unique_ptr<Value> &value) {
     auto token = std::make_shared<Token>(tag, position, value);
-    _token_list.push_back(std::move(token));
+    _token_list.push_back(token);
   }
 
 public:

@@ -7,7 +7,9 @@ int boo(int a, int b, float c);
 int bug(int a, int c) {
   a = 6;
   if (a == 5) {
-    a = 7;
+    a = 1 + 7 * 5;
     float *a;
+    (a++)++;
+    a->field;
   }
 }

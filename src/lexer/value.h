@@ -4,33 +4,34 @@
 #include <iostream>
 #include <memory>
 #include <string>
-#include <vector>
 #include <variant>
+#include <vector>
 
 class Value {
-  friend std::ostream& operator<<(std::ostream &os, const Value &value) {
+  friend std::ostream &operator<<(std::ostream &os, const Value &value) {
     auto val_ptr = &value._value;
     if (auto pval = std::get_if<long long>(val_ptr)) {
-      os << "Integer value: " << *pval; 
-    } else if(auto pval = std::get_if<double>(val_ptr)) {
+      os << "Integer value: " << *pval;
+    } else if (auto pval = std::get_if<double>(val_ptr)) {
       os << "Float value: " << *pval;
     } else if (auto pval = std::get_if<char>(val_ptr)) {
       os << "Char value: " << *pval;
-    } else if (auto pval = std::get_if<std::string>(val_ptr)){
+    } else if (auto pval = std::get_if<std::string>(val_ptr)) {
       os << "String value: " << *pval;
     } else {
       os << "Cannot convert!!!";
     }
     return os;
   }
+
 public:
   Value(long long x) : _value(x) {}
   Value(double x) : _value(x) {}
   Value(std::string x) : _value(std::move(x)) {}
-  ~Value(){}
-private:
-  std::variant<long long, double,char ,std::string> _value = "";
-};
+  ~Value() {}
 
+private:
+  std::variant<long long, double, char, std::string> _value = "";
+};
 
 #endif
