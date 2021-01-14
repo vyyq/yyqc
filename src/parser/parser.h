@@ -36,7 +36,7 @@ private:
   std::shared_ptr<Token> ConsumeToken() { return _lexer->ConsumeToken(); }
   std::shared_ptr<Token> Match(TOKEN tag) {
 #ifdef DEBUG
-    std::cout << "Match: " << Token::tag_to_string[tag] << "---->"
+    std::cout << "Match: " << Token::tag_to_string[tag] << " ----> "
               << PeekToken()->position() << std::endl;
     std::cout << "Current Token: " << Token::tag_to_string[PeekToken()->tag()] << std::endl;
     std::cout << "Next Token: " << Token::tag_to_string[PeekNextToken()->tag()] << std::endl;
